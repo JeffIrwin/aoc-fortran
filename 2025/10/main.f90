@@ -260,26 +260,23 @@ logical function next_combo(c, n)
 
 end function next_combo
 
-end module mod_
-
 !===============================================================================
 
-program main
-	use mod_
-	implicit none
+function part2() result(ans_)
+	character(len = :), allocatable :: ans_
+	!********
 
 	integer :: iu, io, sum_, i0, i1, num_jolts, num_buttons, n, ib
 	integer, allocatable :: jolts_goal(:), ibuttons(:), buttons(:,:), iopt(:)
 	character(len = :), allocatable :: str_, jolts_str, button_str
 
-	print *, "starting main.f90"
 	sum_ = 0
 
 	open(newunit = iu, file = "input.txt", action = "read")
 	!open(newunit = iu, file = "test-input.txt", action = "read")
 	do
 		str_ = read_line(iu, io)
-		print *, "io = ", io
+		!print *, "io = ", io
 		if (io /= 0) exit
 		print *, "str_ = ", str_
 
@@ -338,6 +335,141 @@ program main
 	close(iu)
 
 	print *, "part 2 = ", sum_
+	ans_ = to_str(sum_)
+
+end function part2
+
+!===============================================================================
+
+function part1() result(ans_)
+	character(len = :), allocatable :: ans_
+	!********
+
+	integer :: i, iu, io, sum_, num_lights, num_buttons, n, ib, npress, &
+		npress_min
+	integer, allocatable :: ibuttons(:), combos(:), &
+		imaxes(:)
+	logical :: has_solution
+	logical, allocatable :: lights_goal(:), state(:), buttons(:,:)
+	character(len = :), allocatable :: str_, lights_str, button_str
+
+	type(str_vec_t) :: words
+
+	sum_ = 0
+
+	open(newunit = iu, file = "input.txt", action = "read")
+	!open(newunit = iu, file = "test-input.txt", action = "read")
+	do
+		str_ = read_line(iu, io)
+		!print *, "io = ", io
+		if (io /= 0) exit
+		print *, "str_ = ", str_
+
+		words = split(str_, " ")
+		lights_str = words%v(1)%s
+		print *, "lights_str = ", lights_str
+		num_lights = len(lights_str) - 2
+
+		allocate(lights_goal(num_lights))
+		lights_goal = .false.
+		do i = 2, num_lights+1
+			if (lights_str(i:i) == "#") lights_goal(i-1) = .true.
+		end do
+		print *, "lights_goal = ", lights_goal
+
+		num_buttons = int(words%len - 2)
+		print *, "num_buttons = ", num_buttons
+
+		allocate(buttons(num_lights, num_buttons))
+		buttons = .false.
+
+		ib = 1
+		do i = 2, num_buttons+1
+			button_str = words%v(i)%s
+			print *, "button_str = ", button_str
+
+			! TODO: add parse_i32_delim() helper in utils
+			n = count_str_match(button_str, ",") + 1
+			allocate(ibuttons(n))
+			read(button_str(2: len(button_str)-1), *) ibuttons
+			print *, "ibuttons = ", ibuttons
+
+			buttons(ibuttons+1, ib) = .true.
+			ib = ib + 1
+
+			deallocate(ibuttons)
+		end do
+		!call print_mat_i32("buttons = ", buttons)
+
+		!********
+		! Solve the problem
+
+		allocate(combos(num_buttons), imaxes(num_buttons))
+		combos = 0
+		imaxes = 2  ! press a button 0 or 1 times. twice is a no-op
+		npress_min = huge(npress_min)
+		do
+			print *, "combos = ", combos
+
+			npress = sum(combos)
+			if (allocated(state)) deallocate(state)
+			allocate(state(num_lights))
+			state = .false.
+			do i = 1, num_buttons
+				if (combos(i) == 0) cycle
+				state = state .neqv. buttons(:,i)
+			end do
+			if (all(state .eqv. lights_goal)) then
+				has_solution = .true.
+				print *, "**************************"
+				print *, "Found solution!"
+				print *, "npress = ", npress
+				print *, ""
+				npress_min = min(npress_min, npress)
+				!exit
+			end if
+
+			if (.not. next_combo(combos, imaxes)) exit
+		end do
+		if (has_solution) then
+			sum_ = sum_ + npress_min
+		end if
+		deallocate(combos, imaxes)
+
+		!********
+		deallocate(lights_goal)
+		deallocate(buttons)
+	end do
+	close(iu)
+
+	print *, "part 1 = ", sum_
+	ans_ = to_str(sum_)
+
+end function part1
+
+
+!===============================================================================
+
+end module mod_
+
+!===============================================================================
+
+program main
+	use mod_
+	implicit none
+
+	character(len = :), allocatable :: p1, p2
+
+	p1 = ""
+	p2 = ""
+
+	print *, "starting main.f90"
+
+	p1 = part1()
+	!p2 = part2() ! TODO
+
+	print *, "    "//p1//":"//p2
+
 	print *, "ending main.f90"
 
 end program main

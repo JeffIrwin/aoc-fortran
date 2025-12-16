@@ -212,7 +212,7 @@ function read_line(iu, iostat) result(str)
 	sb = new_str_builder()
 	do
 		read(iu, '(a)', advance = 'no', iostat = io) c
-		print *, "io = ", io
+		!print *, "io = ", io
 		!print *, "c = """, c, """"
 
 		if (io == iostat_end) exit

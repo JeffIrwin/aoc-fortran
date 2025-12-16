@@ -12,6 +12,7 @@ Advent of code in Fortran (again)
   * Copy from syntran, ribbit, numa (blarg.f90), (fynth?). Consolidate forks
   * Unit tests for utils
 - Scripts from aoc-syntran: encryption, decryption, newday, run
+- Add README note about other aoc repos
 
 Later:
 - cmd arg parsing

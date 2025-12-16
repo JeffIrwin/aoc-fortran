@@ -4,40 +4,9 @@
 
 module mod_
 	use iso_fortran_env
+	use utils
 	implicit none
 contains
-
-function read_line(iu, io) result(s)
-	! Read a whole line (any length) as string s from file unit iu
-	!
-	! There are better ways to do this without count_chars, c.f. the syntran
-	! interpreter source
-
-	character(len = :), allocatable :: s
-	integer :: io, iu, ns
-
-	ns = count_chars(iu)
-	allocate(character(len = ns) :: s)
-	read(iu, '(a)', iostat = io) s
-end function read_line
-
-!===============================================================================
-
-integer function count_chars(iu) result(n)
-	! Count number of characters n in the next line of a file unit iu
-	character :: c
-	integer :: io, iu
-
-	n = 0
-	do
-		read(iu, '(a)', advance = 'no', iostat = io) c
-		if (io == iostat_end) exit
-		if (io == iostat_eor) exit
-		n = n + 1
-	end do
-	backspace(iu)
-
-end function count_chars
 
 !===============================================================================
 
@@ -117,7 +86,9 @@ function solve_ilp(a, b) result(iopt)
 	allocate(t(m, n+1))
 	t = 0.0
 	t(:, 1: n  ) = a
-	t(:,    n+1) = b
+	t(:,    n+1) = b  ! TODO: use hstack (or vstack) here from numa blarg
+
+	call print_mat_f32("t ref = ", t)
 
 	! Gaussian elimination to reduced row echelon form
 	!
@@ -170,7 +141,7 @@ function solve_ilp(a, b) result(iopt)
 		end if
 	end do
 	print *, "inonz = ", inonz
-	!call print_mat_f32("t ref = ", t)
+	call print_mat_f32("t ref = ", t)
 
 	! Get the rest of the free vars
 	do k = m, n
@@ -289,9 +260,9 @@ logical function next_combo(c, n)
 
 end function next_combo
 
-!===============================================================================
-
 end module mod_
+
+!===============================================================================
 
 program main
 	use mod_
@@ -305,9 +276,10 @@ program main
 	sum_ = 0
 
 	open(newunit = iu, file = "input.txt", action = "read")
-	!open(newunit = iu, file = "test-input.txt")
+	!open(newunit = iu, file = "test-input.txt", action = "read")
 	do
 		str_ = read_line(iu, io)
+		print *, "io = ", io
 		if (io /= 0) exit
 		print *, "str_ = ", str_
 

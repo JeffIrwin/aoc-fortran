@@ -279,7 +279,7 @@ end function split
 !===============================================================================
 subroutine unit_test_split()
 	character(len = :), allocatable :: str
-	integer :: i
+	integer(kind = 8) :: i
 	type(str_vec_t) :: strs
 	str = "0,12,23,34,,7,,,,45,56,,1"
 	strs = split(str, ",")

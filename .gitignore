@@ -2,5 +2,7 @@
 build/
 input.txt
 test-input.txt
+
+*.o
 main
 

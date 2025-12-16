@@ -6,6 +6,7 @@ Advent of code in Fortran (again)
 ## Plan
 
 - Build system.  GNU make?
+  * add `make debug` vs `make release` options
 - AOC 2025 day 10, part 2, then part 1
 - utils
   * Reading files, splitting strings, etc.

@@ -2,16 +2,6 @@
 
 set -exu
 
-mkdir -p build
-
-# Debug
-gfortran -o main ../../utils.f90 main.f90 -fbounds-check -Wall -Wextra -Wno-tabs -fbacktrace -g -J./build/
-
-## Release
-#gfortran -o main main.f90 -O3 -Wall -Wextra -Wno-tabs
-
-## cp for nvim linting nonsense
-#cp *.mod build
-
+make
 time ./main
 

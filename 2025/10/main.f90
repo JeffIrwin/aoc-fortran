@@ -466,7 +466,7 @@ program main
 	print *, "starting main.f90"
 
 	p1 = part1()
-	!p2 = part2() ! TODO
+	p2 = part2()
 
 	print *, "    "//p1//":"//p2
 

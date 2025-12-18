@@ -2,7 +2,7 @@
 ! The equivalent syntran program runs in 3 minutes.  This runs in 2 seconds
 ! compiled in the debug profile
 
-module mod_
+module aoc_m
 	use iso_fortran_env
 	use utils
 	implicit none
@@ -298,7 +298,7 @@ function part1() result(ans_)
 		!print *, "str_ = ", str_
 
 		words = split(str_, " ")
-		lights_str = words%v(1)%s
+		lights_str = words%vec(1)%str
 		!print *, "lights_str = ", lights_str
 		num_lights = len(lights_str) - 2
 
@@ -317,7 +317,7 @@ function part1() result(ans_)
 
 		ib = 1
 		do i = 2, num_buttons+1
-			button_str = words%v(i)%s
+			button_str = words%vec(i)%str
 			!print *, "button_str = ", button_str
 
 			! TODO: add parse_i32_delim() helper in utils
@@ -378,25 +378,36 @@ end function part1
 
 !===============================================================================
 
-end module mod_
+end module aoc_m
 
 !===============================================================================
 
 program main
-	use mod_
+	use aoc_m
+	use args_m
 	implicit none
 
 	character(len = :), allocatable :: p1, p2
+	type(args_t) :: args
 
+	args = parse_args()
 	p1 = ""
 	p2 = ""
-
 	write(*,*) "starting fortran main"
 
 	p1 = part1()
 	p2 = part2()
 
 	write(*,*) "    "//p1//":"//p2
+
+	if (args%assert) then
+		if (p1 /= "417") then
+			! TODO: do something
+		end if
+		if (p2 /= "16765") then
+			! TODO: do something
+		end if
+	end if
 	write(*,*) "ending fortran main"
 
 end program main

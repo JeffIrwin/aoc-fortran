@@ -21,22 +21,23 @@ module utils
 	! TODO: make these variables, with colors disabled if output_unit is not tty
 	! and an option to --force-color
 	character(len = *), parameter :: &
-			fg_bold               = esc//"[;1m", &
-			fg_yellow             = esc//"[33m", &
-			fg_bright_red         = esc//"[91m", &
-			fg_bold_bright_red    = esc//"[91;1m", &
-			fg_bold_bright_yellow = esc//"[93;1m", &
-			fg_bright_green       = esc//"[92m", &
-			fg_bright_yellow      = esc//"[93m", &
-			fg_bright_blue        = esc//"[94m", &
-			fg_bright_magenta     = esc//"[95m", &
-			fg_bright_cyan        = esc//"[96m", &
-			fg_bright_white       = esc//"[97m", &
-			color_reset           = esc//"[0m"
+			fg_bold               = ESC//"[;1m", &
+			fg_yellow             = ESC//"[33m", &
+			fg_bold_yellow        = ESC//"[33;1m", &
+			fg_bright_red         = ESC//"[91m", &
+			fg_bold_bright_red    = ESC//"[91;1m", &
+			fg_bold_bright_yellow = ESC//"[93;1m", &
+			fg_bright_green       = ESC//"[92m", &
+			fg_bright_yellow      = ESC//"[93m", &
+			fg_bright_blue        = ESC//"[94m", &
+			fg_bright_magenta     = ESC//"[95m", &
+			fg_bright_cyan        = ESC//"[96m", &
+			fg_bright_white       = ESC//"[97m", &
+			color_reset           = ESC//"[0m"
 
 	character(len = *), parameter :: &
 		ERROR_STR = fg_bold_bright_red   //"Error"  //fg_bold//": "//color_reset, &
-		WARN_STR  = fg_yellow//"Warning"//fg_bold//": "//color_reset
+		WARN_STR  = fg_bold_yellow//"Warning"//fg_bold//": "//color_reset
 
 	!********
 
@@ -48,7 +49,7 @@ module utils
 	!********
 
 	type str_t
-		character(len = :), allocatable :: s
+		character(len = :), allocatable :: str
 	end type str_t
 
 	!********
@@ -56,7 +57,7 @@ module utils
 	type str_builder_t
 		! This is basically a dynamic char vector, but the type is a str and not
 		! an actual array of single chars
-		character(len = :), allocatable :: s
+		character(len = :), allocatable :: str
 		integer(kind = 8) :: len, cap
 		contains
 			procedure :: &
@@ -67,7 +68,7 @@ module utils
 	!********
 
 	type str_vec_t
-		type(str_t), allocatable :: v(:)
+		type(str_t), allocatable :: vec(:)
 		integer(kind = 8) :: len, cap
 		contains
 			procedure :: push => push_str
@@ -86,7 +87,7 @@ function new_str_builder() result(sb)
 	sb%len = 0
 	sb%cap = 16
 
-	allocate(character(len = sb%cap) :: sb%s)
+	allocate(character(len = sb%cap) :: sb%str)
 
 end function new_str_builder
 
@@ -99,9 +100,26 @@ function new_str_vec() result(vec)
 	vec%len = 0
 	vec%cap = 2
 
-	allocate(vec%v( vec%cap ))
+	allocate(vec%vec( vec%cap ))
 
 end function new_str_vec
+
+!===============================================================================
+
+subroutine print_str_vec(msg, sv)
+	character(len = *), intent(in) :: msg
+	type(str_vec_t) :: sv
+	!********
+	integer(kind = 8) :: i
+	integer, parameter :: unit_ = output_unit
+
+	write(unit_, "(a)") " "//msg
+	write(unit_, *) "["
+	do i = 1, sv%len
+		write(unit_, "(a)") '     "'//sv%vec(i)%str//'",'
+	end do
+	write(unit_, *) "]"
+end subroutine print_str_vec
 
 !===============================================================================
 
@@ -110,7 +128,7 @@ function trim_str_builder(sb) result(str)
 	class(str_builder_t), intent(in) :: sb
 	character(len = :), allocatable :: str
 
-	str = sb%s(1: sb%len)
+	str = sb%str(1: sb%len)
 
 end function trim_str_builder
 
@@ -139,13 +157,13 @@ subroutine push_str_builder(sb, val)
 		! Grow the buffer capacity.  What is the optimal growth factor?
 		tmp_cap = 2 * sb%cap
 		allocate(character(len = tmp_cap) :: tmp)
-		tmp(1: sb%cap) = sb%s
+		tmp(1: sb%cap) = sb%str
 
-		call move_alloc(tmp, sb%s)
+		call move_alloc(tmp, sb%str)
 		sb%cap = tmp_cap
 
 	end if
-	sb%s(sb%len: sb%len) = val
+	sb%str(sb%len: sb%len) = val
 
 end subroutine push_str_builder
 
@@ -173,15 +191,15 @@ subroutine push_str(vec, val)
 
 		tmp_cap = 2 * vec%len
 		allocate(tmp( tmp_cap ))
-		tmp(1: vec%cap) = vec%v
+		tmp(1: vec%cap) = vec%vec
 
-		call move_alloc(tmp, vec%v)
+		call move_alloc(tmp, vec%vec)
 		vec%cap = tmp_cap
 
 	end if
 
-	val_str%s = val
-	vec%v( vec%len ) = val_str
+	val_str%str = val
+	vec%vec( vec%len ) = val_str
 
 end subroutine push_str
 
@@ -230,7 +248,7 @@ function read_line(iu, iostat) result(str)
 	end do
 	str = sb%trim()
 
-	!print *, "sb  = ", sb%s( 1: sb%len )
+	!print *, "sb  = ", sb%str( 1: sb%len )
 	!print *, "str = ", str
 
 	!if (io == iostat_end .or. io == iostat_eor) io = 0
@@ -283,10 +301,10 @@ subroutine unit_test_split()
 	type(str_vec_t) :: strs
 	str = "0,12,23,34,,7,,,,45,56,,1"
 	strs = split(str, ",")
-	!print *, "strs = ", strs%v(:)%s
-	!print *, "strs = ", [(strs%v(i)%s, i = 1, strs%len)]
+	!print *, "strs = ", strs%vec(:)%str
+	!print *, "strs = ", [(strs%vec(i)%str, i = 1, strs%len)]
 	print *, "strs = "//LINE_FEED//"["
-	print "(a)", [(TAB//'"'//strs%v(i)%s//'",', i = 1, strs%len)]
+	print "(a)", [(TAB//'"'//strs%vec(i)%str//'",', i = 1, strs%len)]
 	print "(a)", "]"
 	call exit(0)
 end subroutine unit_test_split

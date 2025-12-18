@@ -3,5 +3,5 @@
 set -exu
 
 make
-time ./main
+time ./main $*
 

@@ -17,7 +17,7 @@ FFLAGS += -Wno-maybe-uninitialized
 FFLAGS += -Wno-uninitialized
 
 # Source files
-SRC = ../../utils.F90 main.F90
+SRC = ../../src/utils.F90 main.F90
 
 # Object files
 OBJ = $(SRC:.F90=.o)

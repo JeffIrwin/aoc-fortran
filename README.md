@@ -16,8 +16,6 @@ Advent of code in Fortran (again)
 
 Soon:
 - cmd arg parsing
-  * -t --test (input), full "real" input by default
-  * -1, -2, or default both parts of AOC problem
   * --color never|auto|always (syntran has this)
 - Prototypical advent of code problems:
   * Sorting routines -- index array, in-place, type overloads

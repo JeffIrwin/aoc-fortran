@@ -388,21 +388,15 @@ program main
 	implicit none
 
 	character(len = :), allocatable :: p1, p2, expect1, expect2
-	logical :: all_parts, do_p1, do_p2, error = .false.
+	logical :: do_p1, do_p2, error = .false.
 	type(args_t) :: args
 
 	args = parse_args()
 
-	all_parts = .true.
-	if (args%part1 .and. args%part2) then
-		! Do nothing
-	else if (args%part1) then
-		all_parts = .false.
-	else if (args%part2) then
-		all_parts = .false.
-	end if
-	do_p1 = all_parts .or. args%part1
-	do_p2 = all_parts .or. args%part2
+	do_p1 = .true.
+	do_p2 = .true.
+	if (args%part1 .and. .not. args%part2) do_p2 = .false.
+	if (args%part2 .and. .not. args%part1) do_p1 = .false.
 
 	p1 = ""
 	p2 = ""

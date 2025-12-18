@@ -17,10 +17,10 @@ FFLAGS += -Wno-maybe-uninitialized
 FFLAGS += -Wno-uninitialized
 
 # Source files
-SRC = ../../utils.f90 main.f90
+SRC = ../../utils.F90 main.F90
 
-# Object files. TODO: change to uppercase .F90 extensions
-OBJ = $(SRC:.f90=.o)
+# Object files
+OBJ = $(SRC:.F90=.o)
 
 # Executable
 EXEC = main
@@ -31,7 +31,7 @@ all: $(EXEC)
 $(EXEC): $(OBJ)
 	$(FC) $(FFLAGS) -o $@ $^
 
-%.o: %.f90
+%.o: %.F90
 	mkdir -p $(BUILD)
 	$(FC) $(FFLAGS) -c $< -o $@
 

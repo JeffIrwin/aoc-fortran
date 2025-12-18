@@ -391,13 +391,13 @@ program main
 	p1 = ""
 	p2 = ""
 
-	write(*,*) "starting main.f90"
+	write(*,*) "starting fortran main"
 
 	p1 = part1()
 	p2 = part2()
 
 	write(*,*) "    "//p1//":"//p2
-	write(*,*) "ending main.f90"
+	write(*,*) "ending fortran main"
 
 end program main
 

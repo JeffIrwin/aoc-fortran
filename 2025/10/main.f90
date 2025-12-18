@@ -10,64 +10,6 @@ contains
 
 !===============================================================================
 
-integer function count_str_match(str_, char_) result(n)
-	! Count the number `n` of characters `char_` in string `str_`
-	character(len = *), intent(in) :: str_
-	character, intent(in) :: char_
-	!********
-	integer :: i
-	n = 0
-	do i = 1, len(str_)
-		if (str_(i:i) == char_) n = n + 1
-	end do
-end function count_str_match
-
-!===============================================================================
-
-subroutine print_mat_f32(msg, a)
-	! Pretty-print a matrix
-	!
-	! Note that this is transposed compared to Fortran's internal memory layout
-	character(len = *), intent(in) :: msg
-	real, intent(in) :: a(:,:)
-	!********
-	integer :: i, j, m, n
-	m = size(a,1)
-	n = size(a,2)
-	print "(a)", " " // msg
-	do i = 1, m
-		do j = 1, n
-			write(*, "(es11.3)", advance = "no") a(i,j)
-		end do
-		print *, ""
-	end do
-
-end subroutine print_mat_f32
-
-!===============================================================================
-
-subroutine print_mat_i32(msg, a)
-	! Pretty-print a matrix
-	!
-	! Note that this is transposed compared to Fortran's internal memory layout
-	character(len = *), intent(in) :: msg
-	integer, intent(in) :: a(:,:)
-	!********
-	integer :: i, j, m, n
-	m = size(a,1)
-	n = size(a,2)
-	print "(a)", " " // msg
-	do i = 1, m
-		do j = 1, n
-			write(*, "(i6)", advance = "no") a(i,j)
-		end do
-		print *, ""
-	end do
-
-end subroutine print_mat_i32
-
-!===============================================================================
-
 function solve_ilp(a, b) result(iopt)
 	integer, intent(in) :: a(:,:), b(:)
 	integer, allocatable :: iopt(:)
@@ -87,8 +29,7 @@ function solve_ilp(a, b) result(iopt)
 	t = 0.0
 	t(:, 1: n  ) = a
 	t(:,    n+1) = b  ! TODO: use hstack (or vstack) here from numa blarg
-
-	call print_mat_f32("t ref = ", t)
+	!call print_mat_f32("t ref = ", t)
 
 	! Gaussian elimination to reduced row echelon form
 	!
@@ -104,19 +45,10 @@ function solve_ilp(a, b) result(iopt)
 	do while (h <= m .and. k <= n)
 		! Find pivot
 		i1 = maxloc(abs(t(h:m, k)))
-		print *, "i1 = ", i1
+		!print *, "i1 = ", i1
 		imax = i1(1) + h - 1  ! almost easier to just scan manually, like below
 		amax = -1.0
 		if (imax >= 1) amax = abs(t(imax, k))
-		!imax = h
-		!amax = abs(t(h,k))
-		!do i = h+1, m-1
-		!	if (abs(t(i,k)) > amax) then
-		!		amax = abs(t(i,k))
-		!		imax = i
-		!	end if
-		!end do
-
 		!print *, "imax, amax = ", imax, amax
 
 		if (amax < 0.0001) then
@@ -131,7 +63,7 @@ function solve_ilp(a, b) result(iopt)
 			do i = 1, m  ! RREF
 				if (i == h) cycle
 				f = t(i,k) / t(h,k)
-				print *, "f = ", f
+				!print *, "f = ", f
 				t(i,k) = 0.0
 				t(i, k+1: n+1) = t(i, k+1: n+1) - t(h, k+1: n+1) * f
 			end do
@@ -140,8 +72,8 @@ function solve_ilp(a, b) result(iopt)
 			k = k + 1
 		end if
 	end do
-	print *, "inonz = ", inonz
-	call print_mat_f32("t ref = ", t)
+	!print *, "inonz = ", inonz
+	!call print_mat_f32("t ref = ", t)
 
 	! Get the rest of the free vars
 	do k = m, n
@@ -151,7 +83,7 @@ function solve_ilp(a, b) result(iopt)
 		ifree(nfree) = k
 	end do
 	ifree = ifree(1: nfree)
-	print *, "nfree = ", nfree
+	!print *, "nfree = ", nfree
 	!print *, "ifree = ", ifree
 
 	allocate(imaxes(n))
@@ -218,7 +150,7 @@ function solve_ilp(a, b) result(iopt)
 
 			if (is_valid) then
 				fopt = sumx
-				print *, "fopt = ", fopt
+				!print *, "fopt = ", fopt
 				xopt = x
 			end if
 		end if
@@ -278,7 +210,7 @@ function part2() result(ans_)
 		str_ = read_line(iu, io)
 		!print *, "io = ", io
 		if (io /= 0) exit
-		print *, "str_ = ", str_
+		!print *, "str_ = ", str_
 
 		! TODO: I need to port my str split_() fn to Fortran
 		i0 = scan(str_, "{") + 1
@@ -288,7 +220,7 @@ function part2() result(ans_)
 		num_jolts = count_str_match(jolts_str, ",") + 1
 		allocate(jolts_goal(num_jolts))
 		read(jolts_str, *) jolts_goal
-		print *, "jolts_goal = ", jolts_goal
+		!print *, "jolts_goal = ", jolts_goal
 
 		num_buttons = count_str_match(str_, "(")
 		allocate(buttons(0:num_jolts-1, 0:num_buttons-1))
@@ -320,13 +252,13 @@ function part2() result(ans_)
 
 			deallocate(ibuttons)
 		end do
-		call print_mat_i32("buttons = ", buttons)
+		!call print_mat_i32("buttons = ", buttons)
 
 		iopt = solve_ilp(buttons, jolts_goal)
 		sum_ = sum_ + sum(iopt)
 		!print *, "Line: ", iline
-		print *, "Optimal solution = ", iopt
-		print *, "Optimal value    = ", sum(iopt)
+		!print *, "Optimal solution = ", iopt
+		!print *, "Optimal value    = ", sum(iopt)
 
 		!********
 		deallocate(jolts_goal)
@@ -334,7 +266,7 @@ function part2() result(ans_)
 	end do
 	close(iu)
 
-	print *, "part 2 = ", sum_
+	write(*,*) "part 2 = ", sum_
 	ans_ = to_str(sum_)
 
 end function part2
@@ -363,11 +295,11 @@ function part1() result(ans_)
 		str_ = read_line(iu, io)
 		!print *, "io = ", io
 		if (io /= 0) exit
-		print *, "str_ = ", str_
+		!print *, "str_ = ", str_
 
 		words = split(str_, " ")
 		lights_str = words%v(1)%s
-		print *, "lights_str = ", lights_str
+		!print *, "lights_str = ", lights_str
 		num_lights = len(lights_str) - 2
 
 		allocate(lights_goal(num_lights))
@@ -375,10 +307,10 @@ function part1() result(ans_)
 		do i = 2, num_lights+1
 			if (lights_str(i:i) == "#") lights_goal(i-1) = .true.
 		end do
-		print *, "lights_goal = ", lights_goal
+		!print *, "lights_goal = ", lights_goal
 
 		num_buttons = int(words%len - 2)
-		print *, "num_buttons = ", num_buttons
+		!print *, "num_buttons = ", num_buttons
 
 		allocate(buttons(num_lights, num_buttons))
 		buttons = .false.
@@ -386,13 +318,13 @@ function part1() result(ans_)
 		ib = 1
 		do i = 2, num_buttons+1
 			button_str = words%v(i)%s
-			print *, "button_str = ", button_str
+			!print *, "button_str = ", button_str
 
 			! TODO: add parse_i32_delim() helper in utils
 			n = count_str_match(button_str, ",") + 1
 			allocate(ibuttons(n))
 			read(button_str(2: len(button_str)-1), *) ibuttons
-			print *, "ibuttons = ", ibuttons
+			!print *, "ibuttons = ", ibuttons
 
 			buttons(ibuttons+1, ib) = .true.
 			ib = ib + 1
@@ -409,7 +341,7 @@ function part1() result(ans_)
 		imaxes = 2  ! press a button 0 or 1 times. twice is a no-op
 		npress_min = huge(npress_min)
 		do
-			print *, "combos = ", combos
+			!print *, "combos = ", combos
 
 			npress = sum(combos)
 			if (allocated(state)) deallocate(state)
@@ -421,12 +353,8 @@ function part1() result(ans_)
 			end do
 			if (all(state .eqv. lights_goal)) then
 				has_solution = .true.
-				print *, "**************************"
-				print *, "Found solution!"
-				print *, "npress = ", npress
-				print *, ""
+				!print *, "npress = ", npress
 				npress_min = min(npress_min, npress)
-				!exit
 			end if
 
 			if (.not. next_combo(combos, imaxes)) exit
@@ -442,7 +370,7 @@ function part1() result(ans_)
 	end do
 	close(iu)
 
-	print *, "part 1 = ", sum_
+	write(*,*) "part 1 = ", sum_
 	ans_ = to_str(sum_)
 
 end function part1
@@ -463,14 +391,13 @@ program main
 	p1 = ""
 	p2 = ""
 
-	print *, "starting main.f90"
+	write(*,*) "starting main.f90"
 
 	p1 = part1()
 	p2 = part2()
 
-	print *, "    "//p1//":"//p2
-
-	print *, "ending main.f90"
+	write(*,*) "    "//p1//":"//p2
+	write(*,*) "ending main.f90"
 
 end program main
 

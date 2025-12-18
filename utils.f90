@@ -312,6 +312,70 @@ end function to_str_i64
 
 !===============================================================================
 
+integer function count_str_match(str_, char_) result(n)
+	! Count the number `n` of characters `char_` in string `str_`
+	character(len = *), intent(in) :: str_
+	character, intent(in) :: char_
+	!********
+	integer :: i
+	n = 0
+	do i = 1, len(str_)
+		if (str_(i:i) == char_) n = n + 1
+	end do
+end function count_str_match
+
+!===============================================================================
+
+subroutine print_mat_f32(msg, a)
+	! Pretty-print a matrix
+	!
+	! Note that this is transposed compared to Fortran's internal memory layout
+	!
+	! TODO: optional output file unit arg
+	character(len = *), intent(in) :: msg
+	real, intent(in) :: a(:,:)
+	!********
+	integer :: i, j, m, n
+	integer, parameter :: unit_ = output_unit
+	m = size(a,1)
+	n = size(a,2)
+	write(unit_, "(a)") " " // msg
+	do i = 1, m
+		do j = 1, n
+			write(*, "(es11.3)", advance = "no") a(i,j)
+		end do
+		write(unit_, *)
+	end do
+
+end subroutine print_mat_f32
+
+!===============================================================================
+
+subroutine print_mat_i32(msg, a)
+	! Pretty-print a matrix
+	!
+	! Note that this is transposed compared to Fortran's internal memory layout
+	!
+	! TODO: optional output file unit arg
+	character(len = *), intent(in) :: msg
+	integer, intent(in) :: a(:,:)
+	!********
+	integer :: i, j, m, n
+	integer, parameter :: unit_ = output_unit
+	m = size(a,1)
+	n = size(a,2)
+	write(unit_, "(a)") " " // msg
+	do i = 1, m
+		do j = 1, n
+			write(*, "(i6)", advance = "no") a(i,j)
+		end do
+		write(unit_, *)
+	end do
+
+end subroutine print_mat_i32
+
+!===============================================================================
+
 end module utils
 
 !===============================================================================

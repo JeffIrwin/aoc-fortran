@@ -7,6 +7,9 @@ Advent of code in Fortran (again)
 
 - Build system
   * add `make debug` vs `make release` options
+  * move utils.f90 to src dir
+  * rename .f90 -> .F90
+  * make a lib in src dir, or re-build utils every day
 - utils
   * Copy from syntran, ribbit, numa (blarg.f90), (fynth?). Consolidate forks
   * Unit tests for utils

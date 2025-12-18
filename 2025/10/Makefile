@@ -9,7 +9,7 @@ BUILD = ./build/
 
 # Compiler flags
 FFLAGS = -Wall -Wextra -Wno-tabs -J$(BUILD)
-FFLAGS += -fbounds-check -fbacktrace -g  # append debug flags
+FFLAGS += -fcheck=all -fcheck=bounds -fcheck=array-temps -fbacktrace -g  # append debug flags
 #FFLAGS += -O3  # append release flags
 
 # Ignore incorrect warnings

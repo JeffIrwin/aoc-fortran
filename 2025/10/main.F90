@@ -194,7 +194,8 @@ end function next_combo
 
 !===============================================================================
 
-function part2() result(ans_)
+function part2(filename) result(ans_)
+	character(len = *), intent(in) :: filename
 	character(len = :), allocatable :: ans_
 	!********
 
@@ -204,8 +205,7 @@ function part2() result(ans_)
 
 	sum_ = 0
 
-	open(newunit = iu, file = "input.txt", action = "read")
-	!open(newunit = iu, file = "test-input.txt", action = "read")
+	open(newunit = iu, file = filename, action = "read")
 	do
 		str_ = read_line(iu, io)
 		!print *, "io = ", io
@@ -273,7 +273,8 @@ end function part2
 
 !===============================================================================
 
-function part1() result(ans_)
+function part1(filename) result(ans_)
+	character(len = *), intent(in) :: filename
 	character(len = :), allocatable :: ans_
 	!********
 
@@ -289,8 +290,7 @@ function part1() result(ans_)
 
 	sum_ = 0
 
-	open(newunit = iu, file = "input.txt", action = "read")
-	!open(newunit = iu, file = "test-input.txt", action = "read")
+	open(newunit = iu, file = filename, action = "read")
 	do
 		str_ = read_line(iu, io)
 		!print *, "io = ", io
@@ -387,28 +387,53 @@ program main
 	use args_m
 	implicit none
 
-	character(len = :), allocatable :: p1, p2
+	character(len = :), allocatable :: p1, p2, expect1, expect2
+	logical :: all_parts, do_p1, do_p2, error = .false.
 	type(args_t) :: args
 
 	args = parse_args()
+
+	all_parts = .true.
+	if (args%part1 .and. args%part2) then
+		! Do nothing
+	else if (args%part1) then
+		all_parts = .false.
+	else if (args%part2) then
+		all_parts = .false.
+	end if
+	do_p1 = all_parts .or. args%part1
+	do_p2 = all_parts .or. args%part2
+
 	p1 = ""
 	p2 = ""
-	write(*,*) "starting fortran main"
+	write(*,*) fg_bright_magenta//"Starting Fortran AOC"//color_reset
 
-	p1 = part1()
-	p2 = part2()
+	if (do_p1) p1 = part1(args%input_filename)
+	if (do_p2) p2 = part2(args%input_filename)
 
 	write(*,*) "    "//p1//":"//p2
 
 	if (args%assert) then
-		if (p1 /= "417") then
-			! TODO: do something
+
+		expect1 = "417"
+		expect2 = "16765"
+		if (args%test) then
+			expect1 = "7"
+			expect2 = "33"
 		end if
-		if (p2 /= "16765") then
-			! TODO: do something
+
+		if (do_p1 .and. p1 /= expect1) then
+			write(*,*) ERROR_STR//"wrong part 1 answer"
+			error = .true.
 		end if
+		if (do_p2 .and. p2 /= expect2) then
+			write(*,*) ERROR_STR//"wrong part 2 answer"
+			error = .true.
+		end if
+		if (error) call panic("")
 	end if
-	write(*,*) "ending fortran main"
+	!write(*,*) "ending fortran main"
+	call aoc_exit(EXIT_SUCCESS)
 
 end program main
 

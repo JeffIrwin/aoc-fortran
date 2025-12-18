@@ -394,6 +394,22 @@ end subroutine print_mat_i32
 
 !===============================================================================
 
+subroutine panic(msg)
+	character(len = *), intent(in) :: msg
+	if (msg /= "") write(*,*) ERROR_STR//msg
+	call aoc_exit(EXIT_FAILURE)
+end subroutine panic
+
+!===============================================================================
+
+subroutine aoc_exit(exit_code)
+	integer, intent(in) :: exit_code
+	if (exit_code == EXIT_SUCCESS) write(*,*) fg_bright_green//"Finished Fortran AOC"//color_reset
+	call exit(exit_code)
+end subroutine aoc_exit
+
+!===============================================================================
+
 end module utils
 
 !===============================================================================

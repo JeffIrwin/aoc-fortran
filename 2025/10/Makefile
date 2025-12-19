@@ -5,24 +5,30 @@
 export FC = gfortran
 
 # Module output folder (for nvim linting)
-export BUILD_DIR = ./build/
+export BASE_BUILD_DIR = build
+export DEBUG_DIR = $(BASE_BUILD_DIR)/debug
+export RELEASE_DIR = $(BASE_BUILD_DIR)/release
+BUILD_DIR = dummy
 
 # Compiler flags
-export FFLAGS = -Wall -Wextra -Wno-tabs
-FFLAGS += -J$(BUILD_DIR)
-FFLAGS += -I$(LIB_SRC_DIR)/$(BUILD_DIR)
-
-# append debug flags
-FFLAGS += -fcheck=all -fcheck=bounds -fcheck=array-temps
-FFLAGS += -fbacktrace -g
-
-## append release flags
-#FFLAGS += -O3
-
-# Ignore incorrect warnings
-FFLAGS += -Wno-maybe-uninitialized
+export FFLAGS = -Wall -Wextra -Wno-tabs  # warnings
+FFLAGS += -Wno-maybe-uninitialized  # ignore incorrect warnings
 FFLAGS += -Wno-uninitialized
 
+#FFLAGS += -J$(BUILD_DIR)  # module output dir
+FFLAGS += -J$(BASE_BUILD_DIR)  # module output dir
+
+#FFLAGS += -I$(LIB_SRC_DIR)/$(BUILD_DIR)  # include dir
+FFLAGS += -I$(LIB_SRC_DIR)/$(BASE_BUILD_DIR)  # include dir
+
+# Debug compile flags
+FFLAGS_DEBUG = -fcheck=all -fcheck=bounds -fcheck=array-temps  # runtime checks
+FFLAGS_DEBUG += -fbacktrace -g  # log stack traces when crashing
+
+# Release compile flags
+FFLAGS_RELEASE += -O3  # optimize level 3
+
+#=======================================================================
 # Source file(s)
 SRC = \
 	main.F90
@@ -37,8 +43,21 @@ EXE = main
 LIB_SRC_DIR = ../../src
 LIB = $(LIB_SRC_DIR)/aoc.a
 
+#=======================================================================
 # Build rules
 all: $(EXE)
+
+# TODO: default to debug
+debug: DEBUG all
+release: RELEASE all
+
+DEBUG:
+	$(eval FFLAGS += $(FFLAGS_DEBUG))
+	$(eval BUILD_DIR="$(DEBUG_DIR)")
+
+RELEASE:
+	$(eval FFLAGS += $(FFLAGS_RELEASE))
+	$(eval BUILD_DIR="$(RELEASE_DIR)")
 
 main.o: $(LIB)
 

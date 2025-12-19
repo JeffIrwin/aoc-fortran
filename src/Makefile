@@ -1,6 +1,8 @@
 
 # This makefile builds a Fortran project
 
+BUILD_DIR = build
+
 # Source files
 SRC = \
 	utils.F90 \
@@ -21,7 +23,8 @@ $(LIB): $(OBJ)
 	$(AR) -crs $@ $^
 
 %.o: %.F90
-	mkdir -p $(BUILD_DIR)
+	mkdir -p $(BASE_BUILD_DIR)
+	#mkdir -p $(BUILD_DIR)
 	$(FC) $(FFLAGS) -c $< -o $@
 
 clean:

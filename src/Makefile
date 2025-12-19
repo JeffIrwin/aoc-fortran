@@ -25,5 +25,6 @@ $(LIB): $(OBJ)
 	$(FC) $(FFLAGS) -c $< -o $@
 
 clean:
+	rm -rf $(BUILD_DIR)
 	rm -f $(OBJ) $(LIB)
 

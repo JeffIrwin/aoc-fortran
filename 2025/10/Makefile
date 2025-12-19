@@ -8,9 +8,16 @@ export FC = gfortran
 export BUILD_DIR = ./build/
 
 # Compiler flags
-export FFLAGS = -Wall -Wextra -Wno-tabs -J$(BUILD_DIR)
-FFLAGS += -fcheck=all -fcheck=bounds -fcheck=array-temps -fbacktrace -g  # append debug flags
-#FFLAGS += -O3  # append release flags
+export FFLAGS = -Wall -Wextra -Wno-tabs
+FFLAGS += -J$(BUILD_DIR)
+FFLAGS += -I$(LIB_SRC_DIR)/$(BUILD_DIR)
+
+# append debug flags
+FFLAGS += -fcheck=all -fcheck=bounds -fcheck=array-temps
+FFLAGS += -fbacktrace -g
+
+## append release flags
+#FFLAGS += -O3
 
 # Ignore incorrect warnings
 FFLAGS += -Wno-maybe-uninitialized
@@ -46,6 +53,7 @@ $(EXE): $(OBJ) $(LIB)
 	$(FC) $(FFLAGS) -c $< -o $@
 
 clean:
+	rm -rf $(BUILD_DIR)
 	rm -f $(OBJ) $(EXE)
 	$(MAKE) clean -C $(LIB_SRC_DIR)
 

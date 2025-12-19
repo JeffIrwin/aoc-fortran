@@ -9,7 +9,7 @@ SRC = \
 	args.F90
 
 # Object files
-OBJ = $(SRC:.F90=.o)
+OBJS = $(SRC:.F90=.o)
 
 # Static library
 LIB = aoc.a
@@ -19,7 +19,7 @@ all: $(LIB)
 
 args.o: utils.F90
 
-$(LIB): $(OBJ)
+$(LIB): $(OBJS)
 	$(AR) -crs $@ $^
 
 %.o: %.F90
@@ -29,5 +29,5 @@ $(LIB): $(OBJ)
 
 clean:
 	rm -rf $(BUILD_DIR)
-	rm -f $(OBJ) $(LIB)
+	rm -f $(OBJS) $(LIB)
 

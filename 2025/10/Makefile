@@ -8,7 +8,6 @@ export FC = gfortran
 export BASE_BUILD_DIR = build
 export DEBUG_DIR = $(BASE_BUILD_DIR)/debug
 export RELEASE_DIR = $(BASE_BUILD_DIR)/release
-#BUILD_DIR = dummy
 
 # Compiler flags
 export FFLAGS = -Wall -Wextra -Wno-tabs  # warnings
@@ -34,7 +33,7 @@ SRC = \
 	main.F90
 
 # Object files
-OBJ = $(SRC:.F90=.o)
+OBJS = $(SRC:.F90=.o)
 
 # Executable
 EXE = main
@@ -51,10 +50,12 @@ debug: DEBUG $(EXE)
 release: RELEASE $(EXE)
 
 DEBUG:
+	$(eval OBJS = $(addprefix   $(DEBUG_DIR)/, $(OBJS)))
 	$(eval FFLAGS += $(FFLAGS_DEBUG))
 	$(eval BUILD_DIR="$(DEBUG_DIR)")
 
 RELEASE:
+	$(eval OBJS = $(addprefix   $(RELEASE_DIR)/, $(OBJS)))
 	$(eval FFLAGS += $(FFLAGS_RELEASE))
 	$(eval BUILD_DIR="$(RELEASE_DIR)")
 
@@ -63,15 +64,15 @@ main.o: $(LIB)
 $(LIB): $(LIB_SRC_DIR)
 	$(MAKE) -C $(LIB_SRC_DIR)
 
-$(EXE): $(OBJ) $(LIB)
-	$(FC) $(FFLAGS) -o $@ $^
+$(EXE): $(OBJS) $(LIB)
+	$(FC) $(FFLAGS) -o $@ $(OBJS) $(LIB)
 
 %.o: %.F90
 	mkdir -p $(BUILD_DIR)
-	$(FC) $(FFLAGS) -c $< -o $@
+	$(FC) $(FFLAGS) -c $< -o $(BUILD_DIR)/$@
 
 clean:
 	rm -rf $(BUILD_DIR)
-	rm -f $(OBJ) $(EXE)
+	rm -f $(OBJS) $(EXE)
 	$(MAKE) clean -C $(LIB_SRC_DIR)
 

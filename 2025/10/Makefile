@@ -2,13 +2,13 @@
 # This makefile builds a Fortran project
 
 # Compiler
-FC = gfortran
+export FC = gfortran
 
 # Module output folder (for nvim linting)
-BUILD = ./build/
+export BUILD_DIR = ./build/
 
 # Compiler flags
-FFLAGS = -Wall -Wextra -Wno-tabs -J$(BUILD)
+export FFLAGS = -Wall -Wextra -Wno-tabs -J$(BUILD_DIR)
 FFLAGS += -fcheck=all -fcheck=bounds -fcheck=array-temps -fbacktrace -g  # append debug flags
 #FFLAGS += -O3  # append release flags
 
@@ -16,31 +16,36 @@ FFLAGS += -fcheck=all -fcheck=bounds -fcheck=array-temps -fbacktrace -g  # appen
 FFLAGS += -Wno-maybe-uninitialized
 FFLAGS += -Wno-uninitialized
 
-# Source files
+# Source file(s)
 SRC = \
-	  ../../src/utils.F90 \
-	  ../../src/args.F90 \
-	  main.F90
+	main.F90
 
 # Object files
 OBJ = $(SRC:.F90=.o)
 
 # Executable
-EXEC = main
+EXE = main
+
+# Advent of code library from top-level src dir
+LIB_SRC_DIR = ../../src
+LIB = $(LIB_SRC_DIR)/aoc.a
 
 # Build rules
-all: $(EXEC)
+all: $(EXE)
 
-../../src/args.o: ../../src/utils.F90
+main.o: $(LIB)
 
-main.o: ../../src/utils.F90 ../../src/args.F90
+$(LIB): $(LIB_SRC_DIR)
+	$(MAKE) -C $(LIB_SRC_DIR)
 
-$(EXEC): $(OBJ)
+$(EXE): $(OBJ) $(LIB)
 	$(FC) $(FFLAGS) -o $@ $^
 
 %.o: %.F90
-	mkdir -p $(BUILD)
+	mkdir -p $(BUILD_DIR)
 	$(FC) $(FFLAGS) -c $< -o $@
 
 clean:
-	rm -f $(OBJ) $(EXEC)
+	rm -f $(OBJ) $(EXE)
+	$(MAKE) clean -C $(LIB_SRC_DIR)
+

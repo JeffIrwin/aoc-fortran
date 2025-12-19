@@ -3,6 +3,7 @@ build/
 input.txt
 test-input.txt
 
+*.a
 *.o
 main
 

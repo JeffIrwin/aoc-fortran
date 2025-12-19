@@ -49,7 +49,7 @@ function parse_args() result(args)
 		call argv%push(arg)
 		deallocate(arg)
 	end do
-	call print_str_vec("argv = ", argv)
+	!call print_str_vec("argv = ", argv)
 
 	! Parse the args
 	i = 0

@@ -14,11 +14,11 @@ export FFLAGS = -Wall -Wextra -Wno-tabs  # warnings
 FFLAGS += -Wno-maybe-uninitialized  # ignore incorrect warnings
 FFLAGS += -Wno-uninitialized
 
-#FFLAGS += -J$(BUILD_DIR)  # module output dir
-FFLAGS += -J$(BASE_BUILD_DIR)  # module output dir
+FFLAGS += -J$(BUILD_DIR)  # module output dir
+#FFLAGS += -J$(BASE_BUILD_DIR)  # module output dir
 
-#FFLAGS += -I$(LIB_SRC_DIR)/$(BUILD_DIR)  # include dir
-FFLAGS += -I$(LIB_SRC_DIR)/$(BASE_BUILD_DIR)  # include dir
+FFLAGS += -I$(LIB_SRC_DIR)/$(BUILD_DIR)  # include dir
+#FFLAGS += -I$(LIB_SRC_DIR)/$(BASE_BUILD_DIR)  # include dir
 
 # Debug compile flags
 FFLAGS_DEBUG = -fcheck=all -fcheck=bounds -fcheck=array-temps  # runtime checks
@@ -40,7 +40,7 @@ EXE = main
 
 # Advent of code library from top-level src dir
 LIB_SRC_DIR = ../../src
-LIB = $(LIB_SRC_DIR)/aoc.a
+LIB = $(LIB_SRC_DIR)/$(BUILD_DIR)/aoc.a
 
 #=======================================================================
 # Build rules
@@ -52,17 +52,19 @@ release: RELEASE $(EXE)
 DEBUG:
 	$(eval OBJS = $(addprefix   $(DEBUG_DIR)/, $(OBJS)))
 	$(eval FFLAGS += $(FFLAGS_DEBUG))
-	$(eval BUILD_DIR="$(DEBUG_DIR)")
+	$(eval export BUILD_DIR="$(DEBUG_DIR)")
+	$(eval CONFIG = debug)
 
 RELEASE:
 	$(eval OBJS = $(addprefix   $(RELEASE_DIR)/, $(OBJS)))
 	$(eval FFLAGS += $(FFLAGS_RELEASE))
-	$(eval BUILD_DIR="$(RELEASE_DIR)")
+	$(eval export BUILD_DIR="$(RELEASE_DIR)")
+	$(eval CONFIG = release)
 
 main.o: $(LIB)
 
 $(LIB): $(LIB_SRC_DIR)
-	$(MAKE) -C $(LIB_SRC_DIR)
+	$(MAKE) -C $(LIB_SRC_DIR) $(CONFIG)
 
 $(EXE): $(OBJS) $(LIB)
 	$(FC) $(FFLAGS) -o $@ $(OBJS) $(LIB)
@@ -72,7 +74,7 @@ $(EXE): $(OBJS) $(LIB)
 	$(FC) $(FFLAGS) -c $< -o $(BUILD_DIR)/$@
 
 clean:
-	rm -rf $(BUILD_DIR)
-	rm -f $(OBJS) $(EXE)
+	rm -rf $(BASE_BUILD_DIR)
+	rm -f $(EXE)
 	$(MAKE) clean -C $(LIB_SRC_DIR)
 

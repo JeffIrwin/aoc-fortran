@@ -8,7 +8,7 @@ export FC = gfortran
 export BASE_BUILD_DIR = build
 export DEBUG_DIR = $(BASE_BUILD_DIR)/debug
 export RELEASE_DIR = $(BASE_BUILD_DIR)/release
-BUILD_DIR = dummy
+#BUILD_DIR = dummy
 
 # Compiler flags
 export FFLAGS = -Wall -Wextra -Wno-tabs  # warnings
@@ -45,11 +45,10 @@ LIB = $(LIB_SRC_DIR)/aoc.a
 
 #=======================================================================
 # Build rules
-all: $(EXE)
+all: debug
 
-# TODO: default to debug
-debug: DEBUG all
-release: RELEASE all
+debug: DEBUG $(EXE)
+release: RELEASE $(EXE)
 
 DEBUG:
 	$(eval FFLAGS += $(FFLAGS_DEBUG))

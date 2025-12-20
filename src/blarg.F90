@@ -1,11 +1,21 @@
 
+!! The numa version of this file used PANIC as a macro which is non-terminating
+!! if optional iostat arg is present.  Maybe useful in a lib like numa, but not
+!! here in AOC
 !#include "panic.F90"
+
+!****************
 
 !> Basic Linear Algebra Routine Group
 !>
 !> > blarg:  (informal) Expressing frustration or disappointment.
 !> >
 !> > Blarg! I'm sick of this.
+!>
+!> Ported from numerical-analysis:
+!>
+!>     https://github.com/JeffIrwin/numerical-analysis/blob/main/src/blarg.F90
+!>
 module blarg_m
 
 	implicit none

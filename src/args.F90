@@ -10,6 +10,7 @@ module args_m
 			assert             = .false., &  ! assert correctness of results?
 			part1              = .false., &  ! run part 1 only? default both parts
 			part2              = .false., &
+			help               = .false., &
 			has_input_filename = .false.
 
 		character(len = :), allocatable :: input_filename
@@ -35,15 +36,17 @@ function parse_args() result(args)
 	do i = 1, nargs
 
 		call get_command_argument(i, length = len_, status = io)
-		! TODO: handle io
-
+		if (io /= 0) then
+			call panic("can't get length of command argument index "//to_str(i))
+		end if
 		!print *, "arg "//to_str(i)//" len_ = ", len_
 
 		allocate(character(len = len_) :: arg)
 
 		call get_command_argument(i, value = arg, status = io)
-		! TODO: handle io
-
+		if (io /= 0) then
+			call panic("can't get value of command argument index "//to_str(i))
+		end if
 		!print *, "arg "//to_str(i)//" = ", arg
 
 		call argv%push(arg)
@@ -61,7 +64,9 @@ function parse_args() result(args)
 		!print *, "arg = ", arg
 
 		select case (arg)
-		!case ("-h", "-help", "--help")  ! TODO
+		case ("-h", "-help", "--help")
+			args%help = .true.
+
 		case ("-t", "--test")
 			args%test = .true.
 			args%input_filename = "test-input.txt"
@@ -98,11 +103,27 @@ function parse_args() result(args)
 
 	!********
 
-	if (error) then
-		! TODO: log help/usage message
+	if (error .or. args%help) then
 
-		!call panic("bad command syntax")
-		call panic("")
+		write(*,*) fg_bold//"Usage:"//color_reset
+		write(*,*) "    main -h | --help"
+		!write(*,*) "    main -1 | --part1"
+		!write(*,*) "    main -2 | --part2"
+		write(*,*) "    main [-1 | --part1] [-2 | --part2]"
+		write(*,*) "    main [-t | --test] [(-i|--input) file.txt]"
+		write(*,*) "    main -a | --assert"
+		write(*,*)
+		write(*,*) fg_bold//"Options:"//color_reset
+		write(*,*) "    --help        Show this help"
+		write(*,*) "    --part1       Run part 1 only. Default both parts"
+		write(*,*) "    --part2       Run part 2 only"
+		write(*,*) "    --test        Use test-input.txt instead of input.txt"
+		write(*,*) "    --input       Input data filename"
+		write(*,*) "    --assert      Abort if results do not match expected answers"
+		write(*,*)
+
+		if (error) call panic("")
+		call aoc_exit(EXIT_SUCCESS)
 	end if
 
 end function parse_args

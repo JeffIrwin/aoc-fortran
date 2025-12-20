@@ -11,6 +11,7 @@ contains
 !===============================================================================
 
 function solve_ilp(a, b) result(iopt)
+	use blarg_m
 	integer, intent(in) :: a(:,:), b(:)
 	integer, allocatable :: iopt(:)
 	!********
@@ -25,10 +26,7 @@ function solve_ilp(a, b) result(iopt)
 	!print *, "m, n = ", m, n
 
 	! Form augmented matrix tableau
-	allocate(t(m, n+1))
-	t = 0.0
-	t(:, 1: n  ) = a
-	t(:,    n+1) = b  ! TODO: use hstack (or vstack) here from numa blarg
+	t = hstack(a, b)
 	!call print_mat_f32("t ref = ", t)
 
 	! Gaussian elimination to reduced row echelon form
@@ -212,7 +210,6 @@ function part2(filename) result(ans_)
 		if (io /= 0) exit
 		!print *, "str_ = ", str_
 
-		! TODO: I need to port my str split_() fn to Fortran
 		i0 = scan(str_, "{") + 1
 		i1 = scan(str_, "}") - 1
 		jolts_str = str_(i0: i1)
@@ -226,7 +223,7 @@ function part2(filename) result(ans_)
 		allocate(buttons(0:num_jolts-1, 0:num_buttons-1))
 		buttons = 0
 
-		! Parse buttons (split would really help here)
+		! Parse buttons
 		i0 = 0
 		ib = 0
 		do

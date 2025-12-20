@@ -46,10 +46,12 @@ LIB_REL = $(LIB_SRC_DIR)/$(REL_DIR)/aoc.a
 #=======================================================================
 
 # Build rules
-all: debug
+all: prep debug
 
 debug: DBG $(EXE_DBG)
 release: REL $(EXE_REL)
+
+.PHONY: all clean debug prep release
 
 DBG:
 	$(eval FFLAGS += $(FFLAGS_DBG))
@@ -63,9 +65,11 @@ REL:
 
 $(LIB_DBG): $(LIB_SRC_DIR)
 	$(MAKE) -C $(LIB_SRC_DIR) $(CONFIG)
+	cp $(LIB_SRC_DIR)/$(DBG_DIR)/*.mod $(DBG_DIR)
 
 $(LIB_REL): $(LIB_SRC_DIR)
 	$(MAKE) -C $(LIB_SRC_DIR) $(CONFIG)
+	cp $(LIB_SRC_DIR)/$(REL_DIR)/*.mod $(REL_DIR)
 
 $(EXE_DBG): $(OBJS_DBG)
 	$(FC) $(FFLAGS) -o $@ $(OBJS_DBG) $(LIB_DBG)
@@ -74,12 +78,14 @@ $(EXE_REL): $(OBJS_REL)
 	$(FC) $(FFLAGS) -o $@ $(OBJS_REL) $(LIB_REL)
 
 $(DBG_DIR)/%.o: %.F90 $(LIB_DBG)
-	mkdir -p $(DBG_DIR)
 	$(FC) $(FFLAGS) -c $< -o $@
 
 $(REL_DIR)/%.o: %.F90 $(LIB_REL)
-	mkdir -p $(REL_DIR)  # TODO: move to prep rule
 	$(FC) $(FFLAGS) -c $< -o $@
+
+prep:
+	mkdir -p $(DBG_DIR)
+	mkdir -p $(REL_DIR)
 
 clean:
 	rm -rf $(BASE_DIR)

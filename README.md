@@ -5,8 +5,6 @@ Advent of code in Fortran (again)
 
 ## Plan
 
-- Build system
-  * add `make debug` vs `make release` options with separate build .o output dirs
 - try generic fns with unlimited polymorphic class(*) args
   * otherwise, overload things like print_mat_i32() and print_mat_f32() with a
     unified interface

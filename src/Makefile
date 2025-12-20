@@ -4,6 +4,7 @@
 # Source files
 SRC = \
 	utils.F90 \
+	blarg.F90 \
 	args.F90
 
 # Object files
@@ -23,6 +24,9 @@ all: debug
 
 $(DBG_DIR)/args.o: utils.F90
 $(REL_DIR)/args.o: utils.F90
+
+$(DBG_DIR)/blarg.o: utils.F90
+$(REL_DIR)/blarg.o: utils.F90
 
 debug:   $(LIB_DBG)
 release: $(LIB_REL)

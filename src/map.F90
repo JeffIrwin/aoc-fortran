@@ -1,19 +1,14 @@
 module map_m
-	implicit none
+	! This module has hash map classes with string keys and 32-bit integer
+	! values
+	!
+	! TBD other value types, at least string for AOC
 
-    ! ANSI color codes.  TODO: cleanup
-    character(len=*), parameter :: RED = char(27)//'[31m'
-    character(len=*), parameter :: GREEN = char(27)//'[32m'
-    character(len=*), parameter :: YELLOW = char(27)//'[33m'
-    character(len=*), parameter :: BLUE = char(27)//'[34m'
-    character(len=*), parameter :: MAGENTA = char(27)//'[35m'
-    character(len=*), parameter :: CYAN = char(27)//'[36m'
-    character(len=*), parameter :: RESET = char(27)//'[0m'
-    character(len=*), parameter :: BOLD = char(27)//'[1m'
+	implicit none
 
 	type map_entry_i32_t
 		character(len = :), allocatable :: key
-		integer(4) :: val
+		integer(kind = 4) :: val
 	end type map_entry_i32_t
 
 	type map_i32_t
@@ -134,50 +129,48 @@ contains
 		if (present(found)) found = found_
 	end function get_map_i32
 
-	!********
-	! Testing routines, not critical for core map functionality
-
-!void test(bool val, std::string msg, size_t& nfail, size_t& ntot, const char* file, int line)
-
-#define TEST(val, msg, nfail, ntot) call test_(val, msg, nfail, ntot, __FILE__, __LINE__)
-	subroutine test_(val, msg, nfail, ntot, file, line)
-		logical, intent(in) :: val
-		character(len=*), intent(in) :: msg
-		integer, intent(inout) :: nfail, ntot
-		character(len=*), intent(in) :: file
-		integer, intent(in) :: line
-
-		ntot = ntot + 1
-		if (.not. val) then
-			print *, RED // "Test failed: " // RESET
-			print *, "        ", trim(msg)
-			print *, "        at ", trim(file), ":", line
-			nfail = nfail + 1
-		end if
-	end subroutine test_
-
-	integer function rand_int() result(r)
-		! Simple linear congruential generator for random numbers
-		!
-		! TODO: use built-in rng, not this vibe-coded bs
-		integer, save :: seed = 123456789
-		seed = mod(1103515245 * seed + 12345, 2_8**31)
-		r = seed
-	end function rand_int
-
-	function rand_str(len_) result(str)
-		! Generate a random string of given length
-		integer, intent(in) :: len_
-		character(len=len_) :: str
-		integer :: i, j
-		character(len=62), parameter :: chars = &
-			"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-		do i = 1, len_
-			j = modulo(rand_int(), 62) + 1
-			!print *, "j = ", j
-			str(i:i) = chars(j:j)
-		end do
-	end function rand_str
+!	!********
+!	! Testing routines, not critical for core map functionality
+!
+!#define TEST(val, msg, nfail, ntot) call test_(val, msg, nfail, ntot, __FILE__, __LINE__)
+!	subroutine test_(val, msg, nfail, ntot, file, line)
+!		logical, intent(in) :: val
+!		character(len=*), intent(in) :: msg
+!		integer, intent(inout) :: nfail, ntot
+!		character(len=*), intent(in) :: file
+!		integer, intent(in) :: line
+!
+!		ntot = ntot + 1
+!		if (.not. val) then
+!			print *, RED // "Test failed: " // RESET
+!			print *, "        ", trim(msg)
+!			print *, "        at ", trim(file), ":", line
+!			nfail = nfail + 1
+!		end if
+!	end subroutine test_
+!
+!	integer function rand_int() result(r)
+!		! Simple linear congruential generator for random numbers
+!		!
+!		! TODO: use built-in rng, not this vibe-coded bs
+!		integer, save :: seed = 123456789
+!		seed = mod(1103515245 * seed + 12345, 2_8**31)
+!		r = seed
+!	end function rand_int
+!
+!	function rand_str(len_) result(str)
+!		! Generate a random string of given length
+!		integer, intent(in) :: len_
+!		character(len=len_) :: str
+!		integer :: i, j
+!		character(len=62), parameter :: chars = &
+!			"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+!		do i = 1, len_
+!			j = modulo(rand_int(), 62) + 1
+!			!print *, "j = ", j
+!			str(i:i) = chars(j:j)
+!		end do
+!	end function rand_str
 
 end module map_m
 
@@ -241,3 +234,4 @@ end module map_m
 !	print *, MAGENTA // "ending map.f90 main" // RESET
 !
 !end program main
+

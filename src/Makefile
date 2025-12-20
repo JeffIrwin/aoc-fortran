@@ -8,50 +8,43 @@ SRC = \
 
 # Object files
 OBJS = $(SRC:.F90=.o)
+OBJS_DBG = $(addprefix $(DBG_DIR)/, $(OBJS))
+OBJS_REL = $(addprefix $(REL_DIR)/, $(OBJS))
 
 # Static library
 LIB = aoc.a
+#LIB_DBG = $(addprefix $(DBG_DIR)/, $(LIB))
+#LIB_REL = $(addprefix $(REL_DIR)/, $(LIB))
+LIB_DBG = $(DBG_DIR)/$(LIB)
+LIB_REL = $(REL_DIR)/$(LIB)
 
 #=======================================================================
 
 # Build rules
 all: debug
 
-## Build rules
-#all: $(LIB)
-
 #args.o: utils.F90
-$(BUILD_DIR)/args.o: utils.F90
+#$(BUILD_DIR)/args.o: utils.F90
 
-debug: DEBUG $(LIB)
-release: RELEASE $(LIB)
+$(DBG_DIR)/args.o: utils.F90
+$(REL_DIR)/args.o: utils.F90
 
-DEBUG:
-	$(eval OBJS = $(addprefix   $(DEBUG_DIR)/, $(OBJS)))
-	$(eval LIB  = $(addprefix   $(DEBUG_DIR)/, $(LIB)))
-	$(eval FFLAGS += $(FFLAGS_DEBUG))
-	$(eval BUILD_DIR="$(DEBUG_DIR)")
+debug:   $(LIB_DBG)
+release: $(LIB_REL)
 
-RELEASE:
-	$(eval OBJS = $(addprefix   $(RELEASE_DIR)/, $(OBJS)))
-	$(eval LIB  = $(addprefix   $(RELEASE_DIR)/, $(LIB)))
-	$(eval FFLAGS += $(FFLAGS_RELEASE))
-	$(eval BUILD_DIR="$(RELEASE_DIR)")
+$(LIB_DBG): $(OBJS_DBG)
+	$(AR) -crs $(LIB_DBG) $(OBJS_DBG)
 
-#main.o: $(LIB)
+$(LIB_REL): $(OBJS_REL)
+	$(AR) -crs $(LIB_REL) $(OBJS_REL)
 
-#$(LIB): $(LIB_SRC_DIR)
-#	$(MAKE) -C $(LIB_SRC_DIR)
-#
-#$(EXE): $(OBJS) $(LIB)
-#	$(FC) $(FFLAGS) -o $@ $(OBJS) $(LIB)
+$(DBG_DIR)/%.o: %.F90
+	mkdir -p $(DBG_DIR)
+	$(FC) $(FFLAGS) -c $< -o $@
 
-$(LIB): $(OBJS)
-	$(AR) -crs $(LIB) $(OBJS)
-
-%.o: %.F90
-	mkdir -p $(BUILD_DIR)
-	$(FC) $(FFLAGS) -c $< -o $(BUILD_DIR)/$@
+$(REL_DIR)/%.o: %.F90
+	mkdir -p $(REL_DIR)
+	$(FC) $(FFLAGS) -c $< -o $@
 
 clean:
 	rm -rf $(BASE_BUILD_DIR)

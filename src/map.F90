@@ -11,13 +11,28 @@ module map_m
 		integer(kind = 4) :: val
 	end type map_entry_i32_t
 
+	type map_entry_str_t
+		character(len = :), allocatable :: key
+		character(len = :), allocatable :: val
+	end type map_entry_str_t
+
+	!********
+
 	type map_i32_t
 		type(map_entry_i32_t), allocatable :: entries(:)
-		integer :: len_ = 0
+		integer :: len_ = 0  ! TODO: choose consistent int type for len/cap
 		contains
 			procedure :: set => set_map_i32
 			procedure :: get => get_map_i32
 	end type map_i32_t
+
+	type map_str_t
+		type(map_entry_str_t), allocatable :: entries(:)
+		integer :: len_ = 0
+		contains
+			procedure :: set => set_map_str
+			procedure :: get => get_map_str
+	end type map_str_t
 
 contains
 
@@ -47,7 +62,7 @@ contains
 		allocate(map%entries(cap_))
 	end function new_map_i32
 
-	subroutine set_map_i32(this, key, val)
+	recursive subroutine set_map_i32(this, key, val)
 		! Set a key-value pair in the map
 		class(map_i32_t), intent(inout) :: this
 		character(len=*), intent(in) :: key
@@ -129,6 +144,101 @@ contains
 		if (present(found)) found = found_
 	end function get_map_i32
 
+	function new_map_str(cap) result(map)
+		! Create a new empty map
+		type(map_str_t) :: map
+		integer(8), intent(in), optional :: cap
+		integer(8) :: cap_
+		map%len_ = 0
+		cap_ = 256
+		if (present(cap)) then
+			cap_ = cap
+		end if
+		allocate(map%entries(cap_))
+	end function new_map_str
+
+	recursive subroutine set_map_str(this, key, val)
+		! Set a key-value pair in the map
+		class(map_str_t), intent(inout) :: this
+		character(len=*), intent(in) :: key
+		character(len=*), intent(in) :: val
+		integer(8) :: i
+		integer(8) :: hash, idx
+
+		if (this%len_ * 2 >= size(this%entries)) then
+		resize_block: block
+			! Resize the entries array if load factor exceeds 0.5
+			integer(8) :: new_size, old_size
+			type(map_entry_str_t), allocatable :: old_entries(:)
+			old_size = size(this%entries)
+			new_size = old_size * 2
+			old_entries = this%entries
+			deallocate(this%entries)
+			allocate(this%entries(new_size))
+			!this%entries = map_entry_str_t()  ! Reset all entries
+			!this%entries(:)%key = ""  ! reset all entries TODO?
+			this%len_ = 0
+			do i = 1, old_size
+				if (allocated(old_entries(i)%key)) then
+					! Why is this recursive?
+					call this%set(old_entries(i)%key, old_entries(i)%val)
+				end if
+			end do
+			deallocate(old_entries)
+		end block resize_block
+		end if
+
+		hash = djb2_hash(key)
+		idx = mod(hash, size(this%entries)) + 1
+		do
+			if (.not. allocated(this%entries(idx)%key)) then
+				! Empty slot found, insert new entry
+				!allocate(character(len=len_trim(key)) :: this%entries(idx)%key)
+				this%entries(idx)%key = key
+				this%entries(idx)%val = val
+				this%len_ = this%len_ + 1
+				exit
+			else if (this%entries(idx)%key == key) then
+				! Key already exists, update value
+				this%entries(idx)%val = val
+				exit
+			else
+				! Collision, try next index (linear probing)
+				idx = mod(idx, size(this%entries)) + 1
+			end if
+		end do
+
+	end subroutine set_map_str
+
+	function get_map_str(this, key, found) result(val)
+		! Get a value by key from the map
+		class(map_str_t), intent(in) :: this
+		character(len=*), intent(in) :: key
+		logical, intent(out), optional :: found
+		character(len = :), allocatable :: val
+		integer(8) :: hash, idx
+		logical :: found_
+		found_ = .false.
+		val = ""  ! Default value if not found
+		hash = djb2_hash(key)
+		idx = mod(hash, size(this%entries)) + 1
+		do
+			if (.not. allocated(this%entries(idx)%key)) then
+				! Empty slot, key not found
+				exit
+			else if (this%entries(idx)%key == key) then
+				! Key found
+				val = this%entries(idx)%val
+				found_ = .true.
+				exit
+			else
+				! Collision, try next index (linear probing)
+				idx = mod(idx, size(this%entries)) + 1
+			end if
+		end do
+		if (present(found)) found = found_
+	end function get_map_str
+
 !	!********
 !	! Testing routines, not critical for core map functionality
 !
@@ -205,6 +315,10 @@ end module map_m
 !	print *, "    (found = ", found, ")"
 !	print *, "map['barf'] = ", map%get("barf", found)
 !	print *, "    (found = ", found, ")"
+!
+!   ! TODO: i think this only works by coincidence. From experience with a
+!   ! syntran bug, i know fortran thinks ' ' == '  ' is true, hence syntran has
+!   ! a `is_str_eq()` fn in its source
 !	print *, "map[''] = ", map%get("")
 !	print *, "map[' '] = ", map%get(" ")
 !	print *, "map['  '] = ", map%get("  ")

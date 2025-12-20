@@ -13,8 +13,8 @@ export REL_DIR = $(BASE_DIR)/release
 export FFLAGS = -Wall -Wextra -Wno-tabs  # warnings
 FFLAGS += -Wno-maybe-uninitialized  # ignore incorrect warnings
 FFLAGS += -Wno-uninitialized
-FFLAGS += -J$(BASE_DIR)  # module output dir
-FFLAGS += -I$(LIB_SRC_DIR)/$(BASE_DIR)  # include dir
+FFLAGS += -J$(BUILD_DIR)  # module output dir
+FFLAGS += -I$(LIB_SRC_DIR)/$(BUILD_DIR)  # include dir
 
 # Debug compile flags
 FFLAGS_DBG = -fcheck=all -fcheck=bounds -fcheck=array-temps  # runtime checks
@@ -36,11 +36,10 @@ OBJS_REL = $(addprefix $(REL_DIR)/, $(OBJS))
 
 # Executable
 EXE_DBG = main
-EXE_REL = mainr
+EXE_REL = mainr  # rethink this
 
 # Advent of code library from top-level src dir
 LIB_SRC_DIR = ../../src
-#LIB = $(LIB_SRC_DIR)/$(BUILD_DIR)/aoc.a
 LIB_DBG = $(LIB_SRC_DIR)/$(DBG_DIR)/aoc.a
 LIB_REL = $(LIB_SRC_DIR)/$(REL_DIR)/aoc.a
 

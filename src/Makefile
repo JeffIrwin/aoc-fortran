@@ -13,8 +13,6 @@ OBJS_REL = $(addprefix $(REL_DIR)/, $(OBJS))
 
 # Static library
 LIB = aoc.a
-#LIB_DBG = $(addprefix $(DBG_DIR)/, $(LIB))
-#LIB_REL = $(addprefix $(REL_DIR)/, $(LIB))
 LIB_DBG = $(DBG_DIR)/$(LIB)
 LIB_REL = $(REL_DIR)/$(LIB)
 
@@ -22,9 +20,6 @@ LIB_REL = $(REL_DIR)/$(LIB)
 
 # Build rules
 all: debug
-
-#args.o: utils.F90
-#$(BUILD_DIR)/args.o: utils.F90
 
 $(DBG_DIR)/args.o: utils.F90
 $(REL_DIR)/args.o: utils.F90
@@ -47,5 +42,5 @@ $(REL_DIR)/%.o: %.F90
 	$(FC) $(FFLAGS) -c $< -o $@
 
 clean:
-	rm -rf $(BASE_BUILD_DIR)
+	rm -rf $(BASE_DIR)
 

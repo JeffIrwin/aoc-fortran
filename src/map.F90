@@ -11,6 +11,11 @@ module map_m
 		integer(kind = 4) :: val
 	end type map_entry_i32_t
 
+	type map_entry_i64_t
+		character(len = :), allocatable :: key
+		integer(kind = 8) :: val
+	end type map_entry_i64_t
+
 	type map_entry_str_t
 		character(len = :), allocatable :: key
 		character(len = :), allocatable :: val
@@ -25,6 +30,14 @@ module map_m
 			procedure :: set => set_map_i32
 			procedure :: get => get_map_i32
 	end type map_i32_t
+
+	type map_i64_t
+		type(map_entry_i64_t), allocatable :: entries(:)
+		integer :: len_ = 0
+		contains
+			procedure :: set => set_map_i64
+			procedure :: get => get_map_i64
+	end type map_i64_t
 
 	type map_str_t
 		type(map_entry_str_t), allocatable :: entries(:)
@@ -143,6 +156,101 @@ contains
 		end do
 		if (present(found)) found = found_
 	end function get_map_i32
+
+	function new_map_i64(cap) result(map)
+		! Create a new empty map
+		type(map_i64_t) :: map
+		integer(8), intent(in), optional :: cap
+		integer(8) :: cap_
+		map%len_ = 0
+		cap_ = 256
+		if (present(cap)) then
+			cap_ = cap
+		end if
+		allocate(map%entries(cap_))
+	end function new_map_i64
+
+	recursive subroutine set_map_i64(this, key, val)
+		! Set a key-value pair in the map
+		class(map_i64_t), intent(inout) :: this
+		character(len=*), intent(in) :: key
+		integer(8), intent(in) :: val
+		integer(8) :: i
+		integer(8) :: hash, idx
+
+		if (this%len_ * 2 >= size(this%entries)) then
+		resize_block: block
+			! Resize the entries array if load factor exceeds 0.5
+			integer(8) :: new_size, old_size
+			type(map_entry_i64_t), allocatable :: old_entries(:)
+			old_size = size(this%entries)
+			new_size = old_size * 2
+			old_entries = this%entries
+			deallocate(this%entries)
+			allocate(this%entries(new_size))
+			!this%entries = map_entry_i64_t()  ! Reset all entries
+			!this%entries(:)%key = ""  ! reset all entries TODO?
+			this%len_ = 0
+			do i = 1, old_size
+				if (allocated(old_entries(i)%key)) then
+					! Why is this recursive?
+					call this%set(old_entries(i)%key, old_entries(i)%val)
+				end if
+			end do
+			deallocate(old_entries)
+		end block resize_block
+		end if
+
+		hash = djb2_hash(key)
+		idx = mod(hash, size(this%entries)) + 1
+		do
+			if (.not. allocated(this%entries(idx)%key)) then
+				! Empty slot found, insert new entry
+				!allocate(character(len=len_trim(key)) :: this%entries(idx)%key)
+				this%entries(idx)%key = key
+				this%entries(idx)%val = val
+				this%len_ = this%len_ + 1
+				exit
+			else if (this%entries(idx)%key == key) then
+				! Key already exists, update value
+				this%entries(idx)%val = val
+				exit
+			else
+				! Collision, try next index (linear probing)
+				idx = mod(idx, size(this%entries)) + 1
+			end if
+		end do
+
+	end subroutine set_map_i64
+
+	function get_map_i64(this, key, found) result(val)
+		! Get a value by key from the map
+		class(map_i64_t), intent(in) :: this
+		character(len=*), intent(in) :: key
+		logical, intent(out), optional :: found
+		integer(8) :: val
+		integer(8) :: hash, idx
+		logical :: found_
+		found_ = .false.
+		val = 0  ! Default value if not found
+		hash = djb2_hash(key)
+		idx = mod(hash, size(this%entries)) + 1
+		do
+			if (.not. allocated(this%entries(idx)%key)) then
+				! Empty slot, key not found
+				exit
+			else if (this%entries(idx)%key == key) then
+				! Key found
+				val = this%entries(idx)%val
+				found_ = .true.
+				exit
+			else
+				! Collision, try next index (linear probing)
+				idx = mod(idx, size(this%entries)) + 1
+			end if
+		end do
+		if (present(found)) found = found_
+	end function get_map_i64
 
 	function new_map_str(cap) result(map)
 		! Create a new empty map

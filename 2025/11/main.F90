@@ -13,7 +13,8 @@ function part1(filename) result(ans_)
 	character(len = :), allocatable :: ans_
 	!********
 
-	integer :: iu, io, sum_
+	integer :: iu, io
+	integer(kind=8) :: sum_
 	character(len = :), allocatable :: str_, source, sinks
 	type(str_vec_t) :: chunks
 	type(map_str_t) :: map
@@ -44,6 +45,176 @@ function part1(filename) result(ans_)
 	ans_ = to_str(sum_)
 
 end function part1
+
+!===============================================================================
+
+function part2(filename) result(ans_)
+	character(len = *), intent(in) :: filename
+	character(len = :), allocatable :: ans_
+	!********
+
+	integer :: iu, io
+	integer(kind=8) :: sum_  ! TODO: fix kind in template
+	integer(kind=8) :: nsvr2fft, nfft2dac, ndac2out, nsvr2dac, ndac2fft, nfft2out
+	character(len = :), allocatable :: str_, source, sinks
+	type(str_vec_t) :: chunks
+	type(map_str_t) :: map
+	type(map_i64_t) :: cache
+
+	map = new_map_str()
+	sum_ = 0
+	open(newunit = iu, file = filename, action = "read")
+	do
+		str_ = read_line(iu, io)
+		if (io /= 0) exit
+		print *, "str_ = ", str_
+
+		chunks = split(str_, ":")
+		source = chunks%vec(1)%str
+		sinks  = chunks%vec(2)%str
+		print *, "source = ", source
+		print *, "sinks  = ", sinks
+
+		call map%set(source, sinks)
+
+		print *, ""
+	end do
+	close(iu)
+
+	!sum_ = search1(map, "you")
+
+	!****************
+	!
+	! Divide the problem into several smaller ones. Ignoring intermediate
+	! nodes, there are 2 ways to get from "svr" to "out" with the desired nodes
+	! in between:
+	!
+	!         -> dac -> fft
+	!        /n1     n2    \n3
+	!     svr               -> out
+	!        \na     nb    /nc
+	!         -> fft -> dac
+	!
+	! While counting the ways to get *directly* from svr to dac, we want to
+	! ignore fft.  That is what the `avoid` argument in count_paths() is for
+	!
+	! Then the total number of paths from svr to out is:
+	!
+	!      n1*n2*n3 + na*nb*nc
+	!
+	! Where n1 is the number of paths from svr to dac, etc.
+	!
+	!****************
+
+	cache = new_map_i64()
+	nsvr2dac = count_paths(map, cache, "svr", "dac", "fft") ! avoid fft here
+	print *, "nsvr2dac = ", nsvr2dac
+
+	cache = new_map_i64() ! cache invalidation is hard :(
+	!let nsvr2fft = count_paths(&map, &cache, "svr", "fft", "dac")
+	nsvr2fft = count_paths(map, cache, "svr", "fft", "dac") ! avoid fft here
+	!****************
+
+	cache = new_map_i64()
+	!let ndac2fft = count_paths(&map, &cache, "dac", "fft", "")  ! nothing to avoid here
+	ndac2fft = count_paths(map, cache, "dac", "fft", "")  ! nothing to avoid here
+	!//println("ndac2fft = ", ndac2fft)
+
+	cache = new_map_i64()
+	!let nfft2dac = count_paths(&map, &cache, "fft", "dac", "")
+	nfft2dac = count_paths(map, cache, "fft", "dac", "")
+	!//println("nfft2dac = ", nfft2dac)
+
+	!****************
+
+	cache = new_map_i64()
+	!let ndac2out = count_paths(&map, &cache, "dac", "out", "fft")
+	ndac2out = count_paths(map, cache, "dac", "out", "fft")
+	!//println("ndac2out = ", ndac2out)
+
+	cache = new_map_i64()
+	!let nfft2out = count_paths(&map, &cache, "fft", "out", "dac")
+	!//println("nfft2out = ", nfft2out)
+	nfft2out = count_paths(map, cache, "fft", "out", "dac")
+	!****************
+
+	sum_ = &
+		(nsvr2fft * nfft2dac * ndac2out) + &
+		(nsvr2dac * ndac2fft * nfft2out)
+
+	write(*,*) "part 2 = ", sum_
+	ans_ = to_str(sum_)
+
+end function part2
+
+!===============================================================================
+!nsvr2dac = count_paths(map, cache, "svr", "dac", "fft") ! avoid fft here
+recursive function count_paths(map, cache, node, dest, avoid) result(npaths)
+	! Count the number of paths from `node` to `dest` without hitting the
+	! `avoid` node.  The graph connectivity is defined in `map` and a `cache`
+	! is used to help count efficiently without re-visiting sub-paths multiple
+	! times
+	type(map_str_t), intent(in) :: map
+	type(map_i64_t), intent(inout) :: cache
+	character(len=*), intent(in) :: node, dest, avoid
+	integer(kind=8) :: npaths
+!fn count_paths(map: &dict_str, cache: &dict_i64, node: str, dest: str, avoid: str): i64
+!{
+	!********
+	character(len=:), allocatable :: children_str
+	integer(kind=8) :: i, hit
+	logical :: found
+	type(str_vec_t) :: children
+
+!	let hit = get_dict_i64(&cache, node);
+!	if (hit >= 0) return hit;  // cache hit
+	hit = cache%get(node, found)
+	if (found) then
+		npaths = hit
+		return
+	end if
+
+	! Otherwise, cache miss
+
+	! Base cases
+!	if node == avoid
+!	{
+!		set_dict_i64(&cache, node, 0'i64);
+!		return 0'i64;
+!	}
+!	if node == dest
+!	{
+!		set_dict_i64(&cache, node, 1'i64);
+!		return 1'i64;
+!	}
+	if (node == avoid) then
+		call cache%set(node, 0_8)
+		npaths = 0
+		return
+	end if
+	if (node == dest) then
+		call cache%set(node, 1_8)
+		npaths = 1
+		return
+	end if
+
+	! Recursive case -- sum up the children's path counts
+!	let npaths = 0'i64;
+!	let children = get_dict_str(&map, node);
+!	for child in split_(children, " ")
+!		npaths += count_paths(&map, &cache, child, dest, avoid);
+!	set_dict_i64(&cache, node, npaths);
+!	return npaths;
+	npaths = 0
+	children_str = map%get(node)
+	children = split(children_str, " ")
+	do i = 1, children%len
+		npaths = npaths + count_paths(map, cache, children%vec(i)%str, dest, avoid)
+	end do
+	call cache%set(node, npaths)
+
+end function count_paths
+!}
 
 !===============================================================================
 
@@ -138,7 +309,7 @@ program main
 	!****************
 
 	if (do_p1) p1 = part1(args%input_filename)
-	!if (do_p2) p2 = part2(args%input_filename)
+	if (do_p2) p2 = part2(args%input_filename)
 
 	write(*,*) "    "//p1//":"//p2
 
@@ -157,6 +328,8 @@ program main
 			error = .true.
 		end if
 		if (do_p2 .and. p2 /= expect2) then
+			! TODO: this doesn't assert part 2 test correctly because it has a
+			! different input and the "-t" arg is blocked
 			write(*,*) ERROR_STR//"wrong part 2 answer"
 			error = .true.
 		end if

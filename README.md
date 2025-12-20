@@ -23,7 +23,6 @@ Soon:
 - Prototypical advent of code problems:
   * Sorting routines -- index array, in-place, type overloads
   * Grid problem and reading character matrices
-  * Hash map problem
   * Dijkstra problem (minheap)
   * Recursion problem
 

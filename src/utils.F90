@@ -410,6 +410,22 @@ end subroutine aoc_exit
 
 !===============================================================================
 
+logical function is_str_eq(a, b)
+	! Fortran considers spaces as insignificant in str comparisons, but no sane
+	! language would allow that
+	!
+	! I guess this is an artifact of fixed-length strings being common in older
+	! fortran code
+	character(len = *), intent(in) :: a, b
+	!is_str_eq = a == b  ! not what you expect!
+
+	is_str_eq = &
+		len(a) == len(b) .and. &
+		    a  ==     b
+end function is_str_eq
+
+!===============================================================================
+
 end module utils
 
 !===============================================================================

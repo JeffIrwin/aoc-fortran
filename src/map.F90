@@ -4,6 +4,7 @@ module map_m
 	!
 	! TBD other value types, at least string for AOC
 
+	use utils
 	implicit none
 
 	type map_entry_i32_t
@@ -116,7 +117,8 @@ contains
 				this%entries(idx)%val = val
 				this%len_ = this%len_ + 1
 				exit
-			else if (this%entries(idx)%key == key) then
+			!else if (this%entries(idx)%key == key) then
+			else if (is_str_eq(this%entries(idx)%key, key)) then
 				! Key already exists, update value
 				this%entries(idx)%val = val
 				exit
@@ -144,7 +146,7 @@ contains
 			if (.not. allocated(this%entries(idx)%key)) then
 				! Empty slot, key not found
 				exit
-			else if (this%entries(idx)%key == key) then
+			else if (is_str_eq(this%entries(idx)%key, key)) then
 				! Key found
 				val = this%entries(idx)%val
 				found_ = .true.
@@ -201,6 +203,8 @@ contains
 		end block resize_block
 		end if
 
+		! TODO: make this part a separate "set_core*" routine and then get rid
+		! of the recursion above
 		hash = djb2_hash(key)
 		idx = mod(hash, size(this%entries)) + 1
 		do
@@ -211,7 +215,7 @@ contains
 				this%entries(idx)%val = val
 				this%len_ = this%len_ + 1
 				exit
-			else if (this%entries(idx)%key == key) then
+			else if (is_str_eq(this%entries(idx)%key, key)) then
 				! Key already exists, update value
 				this%entries(idx)%val = val
 				exit
@@ -239,7 +243,7 @@ contains
 			if (.not. allocated(this%entries(idx)%key)) then
 				! Empty slot, key not found
 				exit
-			else if (this%entries(idx)%key == key) then
+			else if (is_str_eq(this%entries(idx)%key, key)) then
 				! Key found
 				val = this%entries(idx)%val
 				found_ = .true.
@@ -306,7 +310,7 @@ contains
 				this%entries(idx)%val = val
 				this%len_ = this%len_ + 1
 				exit
-			else if (this%entries(idx)%key == key) then
+			else if (is_str_eq(this%entries(idx)%key, key)) then
 				! Key already exists, update value
 				this%entries(idx)%val = val
 				exit
@@ -334,7 +338,7 @@ contains
 			if (.not. allocated(this%entries(idx)%key)) then
 				! Empty slot, key not found
 				exit
-			else if (this%entries(idx)%key == key) then
+			else if (is_str_eq(this%entries(idx)%key, key)) then
 				! Key found
 				val = this%entries(idx)%val
 				found_ = .true.
@@ -424,9 +428,6 @@ end module map_m
 !	print *, "map['barf'] = ", map%get("barf", found)
 !	print *, "    (found = ", found, ")"
 !
-!   ! TODO: i think this only works by coincidence. From experience with a
-!   ! syntran bug, i know fortran thinks ' ' == '  ' is true, hence syntran has
-!   ! a `is_str_eq()` fn in its source
 !	print *, "map[''] = ", map%get("")
 !	print *, "map[' '] = ", map%get(" ")
 !	print *, "map['  '] = ", map%get("  ")

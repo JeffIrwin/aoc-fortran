@@ -2,7 +2,14 @@
 module aoc_m
 	use iso_fortran_env
 	use utils
-	use map_m  ! TODO: add this to template but commented-out?
+
+	! TODO: add this `use map_m` to template but commented-out? Don't see a
+	! downside to always including it. Actually just copy this back to the
+	! template and down-edit it again. There are several other changes, e.g.
+	! to_str(sum_) logging and TBD actual/expected assert logging, int kinds,
+	! etc.
+	use map_m
+
 	implicit none
 contains
 
@@ -39,7 +46,7 @@ function part1(filename) result(ans_)
 
 	sum_ = search1(map, "you")
 
-	write(*,*) "part 1 = ", sum_
+	write(*,*) "part 1 = ", to_str(sum_)
 	ans_ = to_str(sum_)
 
 end function part1
@@ -122,7 +129,7 @@ function part2(filename) result(ans_)
 		(nsvr2fft * nfft2dac * ndac2out) + &
 		(nsvr2dac * ndac2fft * nfft2out)
 
-	write(*,*) "part 2 = ", sum_
+	write(*,*) "part 2 = ", to_str(sum_)
 	ans_ = to_str(sum_)
 
 end function part2

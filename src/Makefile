@@ -9,42 +9,30 @@ SRC = \
 
 # Object files
 OBJS = $(SRC:.F90=.o)
-OBJS_DBG = $(addprefix $(DBG_DIR)/, $(OBJS))
-OBJS_REL = $(addprefix $(REL_DIR)/, $(OBJS))
 
 # Static library
 LIB = aoc.a
-LIB_DBG = $(DBG_DIR)/$(LIB)
-LIB_REL = $(REL_DIR)/$(LIB)
 
 #=======================================================================
 
 # Build rules
 all: debug
 
-$(DBG_DIR)/args.o: utils.F90
-$(REL_DIR)/args.o: utils.F90
+# Interdependencies within lib
+args.o: utils.F90
+blarg.o: utils.F90
 
-$(DBG_DIR)/blarg.o: utils.F90
-$(REL_DIR)/blarg.o: utils.F90
+debug:   $(LIB)
+release: $(LIB)
 
-debug:   $(LIB_DBG)
-release: $(LIB_REL)
+$(LIB): $(OBJS)
+	$(AR) -crs $(LIB) $(OBJS)
 
-$(LIB_DBG): $(OBJS_DBG)
-	$(AR) -crs $(LIB_DBG) $(OBJS_DBG)
-
-$(LIB_REL): $(OBJS_REL)
-	$(AR) -crs $(LIB_REL) $(OBJS_REL)
-
-$(DBG_DIR)/%.o: %.F90
-	mkdir -p $(DBG_DIR)
-	$(FC) $(FFLAGS) -c $< -o $@
-
-$(REL_DIR)/%.o: %.F90
-	mkdir -p $(REL_DIR)
+%.o: %.F90
+	#mkdir -p $(BUILD_DIR)
 	$(FC) $(FFLAGS) -c $< -o $@
 
 clean:
-	rm -rf $(BASE_DIR)
+	#rm -rf $(BUILD_DIR)
+	rm -f $(LIB) $(OBJS)
 

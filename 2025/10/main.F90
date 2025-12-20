@@ -115,8 +115,7 @@ function solve_ilp(a, b) result(iopt)
 	end do
 	!print *, "i0 = ", i0
 
-	! TODO: zeros(), ones(), etc. fns like matlab would be nice here. I have
-	! most of this implemented with nice overloads in my numerical-analysis repo
+	! TODO: use zeros() from blarg. It's already ported to this project
 	allocate(x(n))
 	x = 0.0
 	do

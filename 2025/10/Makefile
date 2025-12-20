@@ -5,16 +5,14 @@
 export FC = gfortran
 
 # Module output folder (for nvim linting)
-export BASE_DIR = build
-export DBG_DIR = $(BASE_DIR)/debug
-export REL_DIR = $(BASE_DIR)/release
+export BUILD_DIR = build
 
 # Compiler flags
 export FFLAGS = -Wall -Wextra -Wno-tabs  # warnings
 FFLAGS += -Wno-maybe-uninitialized  # ignore incorrect warnings
 FFLAGS += -Wno-uninitialized
-FFLAGS += -J$(BUILD_DIR)  # module output dir
-FFLAGS += -I$(LIB_SRC_DIR)/$(BUILD_DIR)  # include dir
+FFLAGS += -J$(abspath $(BUILD_DIR))  # shared module output dir
+FFLAGS += -I$(abspath $(LIB_SRC_DIR)/$(BUILD_DIR))  # include dir
 
 # Debug compile flags
 FFLAGS_DBG = -fcheck=all -fcheck=bounds -fcheck=array-temps  # runtime checks
@@ -31,64 +29,53 @@ SRC = \
 # Object files
 
 OBJS = $(SRC:.F90=.o)
-OBJS_DBG = $(addprefix $(DBG_DIR)/, $(OBJS))
-OBJS_REL = $(addprefix $(REL_DIR)/, $(OBJS))
 
 # Executable
-EXE_DBG = main
-EXE_REL = mainr  # rethink this
+EXE = main
 
 # Advent of code library from top-level src dir
 LIB_SRC_DIR = ../../src
-LIB_DBG = $(LIB_SRC_DIR)/$(DBG_DIR)/aoc.a
-LIB_REL = $(LIB_SRC_DIR)/$(REL_DIR)/aoc.a
+LIB = $(LIB_SRC_DIR)/aoc.a
 
 #=======================================================================
 
 # Build rules
-all: prep debug
+all: debug
 
-debug: DBG $(EXE_DBG)
-release: REL $(EXE_REL)
+debug: DBG $(EXE)
+release: REL $(EXE)
 
-.PHONY: all clean debug prep release
+.PHONY: all clean debug release
 
 DBG:
 	$(eval FFLAGS += $(FFLAGS_DBG))
-	$(eval export BUILD_DIR="$(DBG_DIR)")
 	$(eval CONFIG = debug)
 
 REL:
 	$(eval FFLAGS += $(FFLAGS_REL))
-	$(eval export BUILD_DIR="$(REL_DIR)")
 	$(eval CONFIG = release)
 
-$(LIB_DBG): $(LIB_SRC_DIR)
+$(LIB): $(LIB_SRC_DIR)
+	mkdir -p $(BUILD_DIR)
 	$(MAKE) -C $(LIB_SRC_DIR) $(CONFIG)
-	cp $(LIB_SRC_DIR)/$(DBG_DIR)/*.mod $(DBG_DIR)
+	#cp $(LIB_SRC_DIR)/$(BUILD_DIR)/*.mod $(BUILD_DIR)
 
-$(LIB_REL): $(LIB_SRC_DIR)
-	$(MAKE) -C $(LIB_SRC_DIR) $(CONFIG)
-	cp $(LIB_SRC_DIR)/$(REL_DIR)/*.mod $(REL_DIR)
+# I previously had separate binary output folders for objects and executables,
+# but it required duplication of so many rules that my makefile was twice as
+# long:
+#
+#     https://github.com/JeffIrwin/aoc-fortran/blob/50308f9f1ac47dbdcea00140a279f2dae0f1e7ac/2025/10/Makefile
+#
+# Now you just have to clean between switching debug/release profiles
+#
+$(EXE): $(OBJS)
+	$(FC) $(FFLAGS) -o $@ $(OBJS) $(LIB)
 
-$(EXE_DBG): $(OBJS_DBG)
-	$(FC) $(FFLAGS) -o $@ $(OBJS_DBG) $(LIB_DBG)
-
-$(EXE_REL): $(OBJS_REL)
-	$(FC) $(FFLAGS) -o $@ $(OBJS_REL) $(LIB_REL)
-
-$(DBG_DIR)/%.o: %.F90 $(LIB_DBG)
+%.o: %.F90 $(LIB)
 	$(FC) $(FFLAGS) -c $< -o $@
-
-$(REL_DIR)/%.o: %.F90 $(LIB_REL)
-	$(FC) $(FFLAGS) -c $< -o $@
-
-prep:
-	mkdir -p $(DBG_DIR)
-	mkdir -p $(REL_DIR)
 
 clean:
-	rm -rf $(BASE_DIR)
-	rm -f $(EXE_DBG) $(EXE_REL)
+	rm -rf $(BUILD_DIR)
+	rm -f $(EXE) $(OBJS)
 	$(MAKE) clean -C $(LIB_SRC_DIR)
 

@@ -58,7 +58,7 @@ function parse_args() result(args)
 	do while (i < nargs)
 		i = i + 1
 		arg = argv%vec(i)%str
-		print *, "arg = ", arg
+		!print *, "arg = ", arg
 
 		select case (arg)
 		!case ("-h", "-help", "--help")  ! TODO
@@ -79,7 +79,7 @@ function parse_args() result(args)
 			i = i + 1
 			args%has_input_filename = .true.
 			args%input_filename = argv%vec(i)%str
-			print *, "input filename = ", args%input_filename
+			!print *, "input filename = ", args%input_filename
 
 		case default
 			! run.sh passes args to make as well as this program. don't

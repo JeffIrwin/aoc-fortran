@@ -45,6 +45,7 @@ program main
 	type(args_t) :: args
 
 	args = parse_args()
+	write(*,*) fg_bright_magenta//"Starting Fortran AOC"//color_reset
 
 	do_p1 = .true.
 	do_p2 = .true.
@@ -53,7 +54,6 @@ program main
 
 	p1 = ""
 	p2 = ""
-	write(*,*) fg_bright_magenta//"Starting Fortran AOC"//color_reset
 
 	if (do_p1) p1 = part1(args%input_filename)
 	!if (do_p2) p2 = part2(args%input_filename)

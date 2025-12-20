@@ -67,6 +67,9 @@ program main
 	call map%set("foo", 1)
 	call map%set("bar", 2)
 	call map%set("baz", 3)
+	call map%set(""  , 10)
+	call map%set(" " , 11)
+	call map%set("  ", 12)
 
 	print *, "map['foo'] = ", map%get("foo")
 	print *, "map['bar'] = ", map%get("bar")
@@ -74,6 +77,9 @@ program main
 	print *, "    (found = ", found, ")"
 	print *, "map['barf'] = ", map%get("barf", found)
 	print *, "    (found = ", found, ")"
+	print *, "map[''] = ", map%get("")
+	print *, "map[' '] = ", map%get(" ")
+	print *, "map['  '] = ", map%get("  ")
 
 	!****************
 

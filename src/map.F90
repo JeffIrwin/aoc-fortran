@@ -195,6 +195,9 @@ end module map_m
 !	call map%set("foo", 1)
 !	call map%set("bar", 2)
 !	call map%set("baz", 3)
+!	call map%set(""  , 10)
+!	call map%set(" " , 11)
+!	call map%set("  ", 12)
 !
 !	print *, "map['foo'] = ", map%get("foo")
 !	print *, "map['bar'] = ", map%get("bar")
@@ -202,10 +205,16 @@ end module map_m
 !	print *, "    (found = ", found, ")"
 !	print *, "map['barf'] = ", map%get("barf", found)
 !	print *, "    (found = ", found, ")"
+!	print *, "map[''] = ", map%get("")
+!	print *, "map[' '] = ", map%get(" ")
+!	print *, "map['  '] = ", map%get("  ")
 !
 !	TEST(map%get("foo") == 1, "map foo", nfail, ntot)
 !	TEST(map%get("bar") == 2, "map bar", nfail, ntot)
 !	TEST(map%get("baz") == 3, "map baz", nfail, ntot)
+!	TEST(map%get("") == 10, "map ''", nfail, ntot)
+!	TEST(map%get(" ") == 11, "map ' '", nfail, ntot)
+!	TEST(map%get("  ") == 12, "map '  '", nfail, ntot)
 !
 !	val = map%get("bar", found)
 !	TEST(found, "map bar found", nfail, ntot)

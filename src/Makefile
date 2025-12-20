@@ -1,10 +1,19 @@
 
-# This makefile builds a Fortran project
+# This makefile builds the AOC static library
+#
+# Do not make this makefile on its own.  It is meant to be called from one of
+# the daily makefiles, e.g. in the 2025/10 directory, where all the options like
+# FC and FFLAGS are set:
+#
+#     cd 2025/10
+#     make [debug|release]
+#     ./main -h
 
 # Source files
 SRC = \
 	utils.F90 \
 	blarg.F90 \
+	map.F90 \
 	args.F90
 
 # Object files

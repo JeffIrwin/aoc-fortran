@@ -11,7 +11,9 @@ Advent of code in Fortran (again)
 - utils
   * Copy from syntran, ribbit, numa (blarg.f90), (fynth?). Consolidate forks
   * Unit tests for utils
-- Add README note about other aoc repos
+- Add README notes:
+  * links to other aoc repos (syntran, older fortran)
+  * how to run things in this repo
 - Update newday and run scripts for Fortran
 - Built-in timer instead of shell "time"
 
@@ -28,6 +30,11 @@ Soon:
 Much later:
 - Docker
 - CI/CD with GitHub actions
+- Experiment with fpm (or cmake) as a build system
+  * FPM has a "local dependency" option that I should be able to use to build my
+    lib from a separate fpm.toml in its own dir.
+  * Make has been underwhelming. I have to clean in between switching
+    debug/release or else have a very long, verbose, error-prone makefile
 
 ## References and links
 

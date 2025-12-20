@@ -15,20 +15,30 @@ module blarg_m
 		procedure :: outer_product_f64
 	end interface outer_product
 
-	interface zeros
-		procedure :: zeros_vec
-		procedure :: zeros_mat
-	end interface zeros
+	interface zeros_f32
+		procedure :: zeros_vec_f32
+		procedure :: zeros_mat_f32
+	end interface zeros_f32
+
+	interface zeros_f64
+		procedure :: zeros_vec_f64
+		procedure :: zeros_mat_f64
+	end interface zeros_f64
 
 	interface zeros_i32
 		procedure :: zeros_vec_i32
-		!procedure :: zeros_mat_i32
+		procedure :: zeros_mat_i32
 	end interface zeros_i32
 
-	interface ones
-		procedure :: ones_vec
-		procedure :: ones_mat
-	end interface ones
+	interface ones_i32
+		procedure :: ones_vec_i32
+		procedure :: ones_mat_i32
+	end interface ones_i32
+
+	interface ones_f64
+		procedure :: ones_vec_f64
+		procedure :: ones_mat_f64
+	end interface ones_f64
 
 	interface falses
 		procedure :: falses_vec
@@ -156,37 +166,77 @@ end function norm2c
 
 !===============================================================================
 
-function zeros_mat(m, n) result(a)
+function zeros_mat_f64(m, n) result(a)
 	! m x n matrix of 0
 	integer, intent(in) :: m, n
 	double precision, allocatable :: a(:,:)
 	allocate(a(m, n))
 	a = 0
-end function zeros_mat
+end function zeros_mat_f64
 
-function zeros_vec(n) result(a)
+function zeros_vec_f64(n) result(a)
 	! Size n vector of 0
 	integer, intent(in) :: n
 	double precision, allocatable :: a(:)
 	allocate(a(n))
 	a = 0
-end function zeros_vec
+end function zeros_vec_f64
 
-function ones_mat(m, n) result(a)
+function zeros_mat_f32(m, n) result(a)
+	! m x n matrix of 0
+	integer, intent(in) :: m, n
+	real, allocatable :: a(:,:)
+	allocate(a(m, n))
+	a = 0
+end function zeros_mat_f32
+
+function zeros_mat_i32(m, n) result(a)
+	! m x n matrix of 0
+	integer, intent(in) :: m, n
+	integer, allocatable :: a(:,:)
+	allocate(a(m, n))
+	a = 0
+end function zeros_mat_i32
+
+function zeros_vec_f32(n) result(a)
+	! Size n vector of 0
+	integer, intent(in) :: n
+	real, allocatable :: a(:)
+	allocate(a(n))
+	a = 0
+end function zeros_vec_f32
+
+function ones_mat_f64(m, n) result(a)
 	! m x n matrix of 0
 	integer, intent(in) :: m, n
 	double precision, allocatable :: a(:,:)
 	allocate(a(m, n))
 	a = 1
-end function ones_mat
+end function ones_mat_f64
 
-function ones_vec(n) result(a)
+function ones_vec_f64(n) result(a)
 	! Size n vector of 0
 	integer, intent(in) :: n
 	double precision, allocatable :: a(:)
 	allocate(a(n))
 	a = 1
-end function ones_vec
+end function ones_vec_f64
+
+function ones_mat_i32(m, n) result(a)
+	! m x n matrix of 0
+	integer, intent(in) :: m, n
+	integer, allocatable :: a(:,:)
+	allocate(a(m, n))
+	a = 1
+end function ones_mat_i32
+
+function ones_vec_i32(n) result(a)
+	! Size n vector of 0
+	integer, intent(in) :: n
+	integer, allocatable :: a(:)
+	allocate(a(n))
+	a = 1
+end function ones_vec_i32
 
 function zeros_vec_i32(n) result(a)
 	! Size n vector of 0
@@ -222,7 +272,7 @@ function diag_set(v) result(d)
 	integer :: i, n
 
 	n = size(v)
-	d = zeros(n, n)
+	d = zeros_f64(n, n)
 	do i = 1, n
 		d(i,i) = v(i)
 	end do

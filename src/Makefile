@@ -25,6 +25,8 @@ blarg.o: utils.F90
 debug:   $(LIB)
 release: $(LIB)
 
+.PHONY: all clean debug release
+
 $(LIB): $(OBJS)
 	$(AR) -crs $(LIB) $(OBJS)
 

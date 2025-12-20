@@ -33,10 +33,8 @@ function solve_ilp(a, b) result(iopt)
 	!
 	! See part2.syntran or main.syntran for marginally more comments on the same
 	! algorithm
-	allocate(inonz(m))
-	inonz = -1
-	allocate(ifree(n))
-	ifree = 0
+	inonz = -ones_i32(m)
+	ifree = zeros_i32(n)
 	nfree = 0
 	h = 1
 	k = 1
@@ -80,12 +78,11 @@ function solve_ilp(a, b) result(iopt)
 		nfree = nfree + 1
 		ifree(nfree) = k
 	end do
-	ifree = ifree(1: nfree)
+	ifree = ifree(1: nfree)  ! trim
 	!print *, "nfree = ", nfree
 	!print *, "ifree = ", ifree
 
-	allocate(imaxes(n))
-	imaxes = 0
+	imaxes = zeros_i32(n)
 	do j = 1, n
 	do i = 1, m
 		if (a(i,j) /= 0) then
@@ -95,15 +92,13 @@ function solve_ilp(a, b) result(iopt)
 	end do
 	!print *, "imaxes (full) = ", imaxes
 
-	allocate(xopt(n))
-	xopt = 0.0
+	xopt = zeros_f32(n)
 	fopt = huge(fopt)
 	!print *, "fopt = ", fopt
 
 	! Iterate over possible value combinations of free vars
 	imaxes = imaxes(ifree)
-	allocate(combos(nfree))
-	combos = 0
+	combos = zeros_i32(nfree)
 	!print *, "imaxes = ", imaxes
 
 	i0 = -1
@@ -115,9 +110,7 @@ function solve_ilp(a, b) result(iopt)
 	end do
 	!print *, "i0 = ", i0
 
-	! TODO: use zeros() from blarg. It's already ported to this project
-	allocate(x(n))
-	x = 0.0
+	x = zeros_f32(n)
 	do
 		sumx = sum(1.0 * combos)
 		!print *, "combos = ", combos
@@ -371,7 +364,6 @@ function part1(filename) result(ans_)
 
 end function part1
 
-
 !===============================================================================
 
 end module aoc_m
@@ -414,6 +406,7 @@ program main
 
 		if (do_p1 .and. p1 /= expect1) then
 			write(*,*) ERROR_STR//"wrong part 1 answer"
+			! Print expected value?
 			error = .true.
 		end if
 		if (do_p2 .and. p2 /= expect2) then

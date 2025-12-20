@@ -13,6 +13,7 @@ Advent of code in Fortran (again)
   * Unit tests for utils
 - Add README note about other aoc repos
 - Update newday and run scripts for Fortran
+- Built-in timer instead of shell "time"
 
 Soon:
 - cmd arg parsing

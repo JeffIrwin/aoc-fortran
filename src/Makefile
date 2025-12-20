@@ -14,8 +14,8 @@ OBJS = $(SRC:.F90=.o)
 LIB = aoc.a
 
 #=======================================================================
-
 # Build rules
+
 all: debug
 
 # Interdependencies within lib
@@ -29,10 +29,8 @@ $(LIB): $(OBJS)
 	$(AR) -crs $(LIB) $(OBJS)
 
 %.o: %.F90
-	#mkdir -p $(BUILD_DIR)
 	$(FC) $(FFLAGS) -c $< -o $@
 
 clean:
-	#rm -rf $(BUILD_DIR)
 	rm -f $(LIB) $(OBJS)
 

@@ -11,7 +11,7 @@ if [[ $# -lt 1 ]]; then
 	exit 1
 fi
 
-for f in $* ; do
+for f in "$@" ; do
 	input_plaintext="$f"
 	gpg --batch --yes --passphrase "$AOC_GPG_PASSPHRASE" -c "$input_plaintext"
 	echo Encrypted file $input_plaintext.gpg

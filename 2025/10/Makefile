@@ -22,12 +22,12 @@ FFLAGS_DBG += -fbacktrace -g  # log stack traces when crashing
 FFLAGS_REL += -O3  # optimize level 3
 
 #=======================================================================
+
 # Source file(s)
 SRC = \
 	main.F90
 
 # Object files
-
 OBJS = $(SRC:.F90=.o)
 
 # Executable
@@ -38,8 +38,9 @@ LIB_SRC_DIR = ../../src
 LIB = $(LIB_SRC_DIR)/aoc.a
 
 #=======================================================================
-
 # Build rules
+
+# Default to debug profile
 all: debug
 
 debug: DBG $(EXE)
@@ -58,7 +59,6 @@ REL:
 $(LIB): $(LIB_SRC_DIR)
 	mkdir -p $(BUILD_DIR)
 	$(MAKE) -C $(LIB_SRC_DIR) $(CONFIG)
-	#cp $(LIB_SRC_DIR)/$(BUILD_DIR)/*.mod $(BUILD_DIR)
 
 # I previously had separate binary output folders for objects and executables,
 # but it required duplication of so many rules that my makefile was twice as
@@ -71,7 +71,9 @@ $(LIB): $(LIB_SRC_DIR)
 $(EXE): $(OBJS)
 	$(FC) $(FFLAGS) -o $@ $(OBJS) $(LIB)
 
-%.o: %.F90 $(LIB)
+$(OBJS): $(LIB)
+
+%.o: %.F90
 	$(FC) $(FFLAGS) -c $< -o $@
 
 clean:

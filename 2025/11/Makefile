@@ -4,15 +4,18 @@
 # Compiler
 export FC = gfortran
 
+LIB_SRC_DIR = ../../src
+
 # Module output folder (for nvim linting)
-export BUILD_DIR = build
+BUILD_DIR_RLTV = build
+BUILD_DIR_ABSO = $(abspath $(LIB_SRC_DIR)/$(BUILD_DIR_RLTV))
 
 # Compiler flags
 export FFLAGS = -Wall -Wextra -Wno-tabs  # warnings
 FFLAGS += -Wno-maybe-uninitialized  # ignore incorrect warnings
 FFLAGS += -Wno-uninitialized
-FFLAGS += -J$(abspath $(LIB_SRC_DIR)/$(BUILD_DIR))  # shared module output dir
-FFLAGS += -I$(abspath $(LIB_SRC_DIR)/$(BUILD_DIR))  # include dir
+FFLAGS += -J$(BUILD_DIR_ABSO)  # shared module output dir
+FFLAGS += -I$(BUILD_DIR_ABSO)  # include dir
 
 # Debug compile flags
 FFLAGS_DBG = -fcheck=all -fcheck=bounds -fcheck=array-temps  # runtime checks
@@ -34,7 +37,6 @@ OBJS = $(SRC:.F90=.o)
 EXE = main
 
 # Advent of code library from top-level src dir
-LIB_SRC_DIR = ../../src
 LIB = $(LIB_SRC_DIR)/aoc.a
 
 #=======================================================================
@@ -57,7 +59,7 @@ REL:
 	$(eval CONFIG = release)
 
 $(LIB): $(LIB_SRC_DIR)
-	mkdir -p $(LIB_SRC_DIR)/$(BUILD_DIR)
+	mkdir -p $(BUILD_DIR_ABSO)
 	$(MAKE) -C $(LIB_SRC_DIR) $(CONFIG)
 
 # I previously had separate binary output folders for objects and executables,
@@ -77,7 +79,7 @@ $(OBJS): $(LIB)
 	$(FC) $(FFLAGS) -c $< -o $@
 
 clean:
-	rm -rf $(BUILD_DIR)
+	rm -rf $(BUILD_DIR_ABSO)
 	rm -f $(EXE) $(OBJS)
 	$(MAKE) clean -C $(LIB_SRC_DIR)
 

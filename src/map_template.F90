@@ -4,7 +4,7 @@ module map_VAL_NAME_m
 
 	private :: map_entry_VAL_NAME_t, set_map_VAL_NAME_core
 
-	private :: djb2_hash  ! ok to expose this if needed
+	private :: djb2_hash  ! ok to expose this if needed. could be moved to utils
 
 	!********
 

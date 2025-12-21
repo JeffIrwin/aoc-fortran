@@ -2,6 +2,15 @@
 
 # Auto-generate Fortran source from template(s)
 #
+# When adding a new map type, there are still some manual steps that you need to
+# do after running this script:
+#
+#   - edit map.F90 to `use map_${name}_m`
+#   - add map_${name}.F90 to the Makefile
+#   - add build rules to the Makefile:
+#     * map depends on map_${name}
+#     * map_${name} depends on utils
+#
 # This might not extend to array types, but it's good for primitive scalars at
 # least
 

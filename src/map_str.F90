@@ -4,7 +4,7 @@ module map_str_m
 
 	private :: map_entry_str_t, set_map_str_core
 
-	private :: djb2_hash  ! ok to expose this if needed
+	private :: djb2_hash  ! ok to expose this if needed. could be moved to utils
 
 	!********
 

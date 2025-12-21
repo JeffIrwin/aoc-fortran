@@ -4,7 +4,7 @@ module map_i32_m
 
 	private :: map_entry_i32_t, set_map_i32_core
 
-	private :: djb2_hash  ! ok to expose this if needed
+	private :: djb2_hash  ! ok to expose this if needed. could be moved to utils
 
 	!********
 

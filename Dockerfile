@@ -27,8 +27,8 @@ RUN ../../decrypt-aoc.sh input.txt.gpg
 RUN ../../decrypt-aoc.sh test-input.txt.gpg
 
 RUN cmake -S . -B build && cmake --build build #--verbose
-RUN ./build/main --assert -t
-RUN ./build/main --assert
+RUN ./main --assert -t
+RUN ./main --assert
 
 #****************
 WORKDIR /workdir/aoc-fortran/2025/11
@@ -38,7 +38,7 @@ RUN ../../decrypt-aoc.sh test-input.txt.gpg
 RUN ../../decrypt-aoc.sh test-input2.txt.gpg
 
 RUN cmake -S . -B build && cmake --build build #--verbose
-RUN ./build/main --assert -1 -t
-RUN ./build/main -2 -i test-input2.txt #--assert
-RUN ./build/main --assert
+RUN ./main --assert -1 -t
+RUN ./main -2 -i test-input2.txt #--assert
+RUN ./main --assert
 

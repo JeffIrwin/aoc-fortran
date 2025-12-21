@@ -7,23 +7,16 @@ set(SRCS
 	main.F90
 )
 
-set(LIB_BUILD_DIR "${CMAKE_SOURCE_DIR}/../../src/build")
+set(LIB_DIR "${CMAKE_SOURCE_DIR}/../../src")
+set(LIB_BUILD_DIR "${LIB_DIR}/build")
+add_subdirectory(${LIB_DIR} ${LIB_BUILD_DIR})
 
-#add_subdirectory("${CMAKE_SOURCE_DIR}/../../src")
-add_subdirectory("${CMAKE_SOURCE_DIR}/../../src" ${LIB_BUILD_DIR})
+# Set module include dir
+add_compile_options("-I${LIB_BUILD_DIR}")
 
-#target_include_directories(${PROJECT} PUBLIC
-#	${LIB_BUILD_DIR}
-#)
-add_compile_options(
-	#"-J${LIB_BUILD_DIR}"
-	"-I${LIB_BUILD_DIR}"
-)
+# Put exe in current dir
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_executable(${PROJECT} ${SRCS})
-
-target_link_libraries(${PROJECT}
-	#${LIB_BUILD_DIR}/libaoc-fortran.a
-	aoc-fortran
-)
+target_link_libraries(${PROJECT} aoc-fortran)
 

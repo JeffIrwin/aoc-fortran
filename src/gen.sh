@@ -37,7 +37,7 @@ for i in $(seq 0 $(( $nrows - 1 )) ) ; do
 	val_dflt=${table[$(( $i * $ncols + 3 ))]}
 
 	ofile="map_${val_name}.F90"
-	cp map_template.F90 "$ofile"
+	cp ../template/map.F90 "$ofile"
 
 	sed -i "s/VAL_NAME/$val_name/g" "$ofile"
 	sed -i "s/VAL_OUT_/$val_out_/g" "$ofile"

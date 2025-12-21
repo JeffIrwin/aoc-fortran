@@ -7,6 +7,13 @@ module map_m
 	use utils
 	implicit none
 
+	private :: map_entry_i32_t
+	private :: map_entry_i64_t, set_map_i64_core
+	private :: map_entry_str_t
+
+	private :: djb2_hash  ! ok to expose this if needed
+
+	!********
 	type map_entry_i32_t
 		character(len = :), allocatable :: key
 		integer(kind = 4) :: val
@@ -23,7 +30,6 @@ module map_m
 	end type map_entry_str_t
 
 	!********
-
 	type map_i32_t
 		type(map_entry_i32_t), allocatable :: entries(:)
 		integer :: len_ = 0  ! TODO: choose consistent int type for len/cap
@@ -34,10 +40,11 @@ module map_m
 
 	type map_i64_t
 		type(map_entry_i64_t), allocatable :: entries(:)
-		integer :: len_ = 0
+		integer(kind=8) :: len_ = 0
 		contains
 			procedure :: set => set_map_i64
 			procedure :: get => get_map_i64
+			procedure, private :: set_core => set_map_i64_core
 	end type map_i64_t
 
 	type map_str_t
@@ -57,7 +64,6 @@ contains
 		integer :: i
 
 		hash = 5381
-		!do i = 1, len_trim(str)
 		do i = 1, len(str)
 			hash = ((hash * 33) + iachar(str(i:i)))  ! hash * 33 + c
 		end do
@@ -176,41 +182,44 @@ contains
 		! Set a key-value pair in the map
 		class(map_i64_t), intent(inout) :: this
 		character(len=*), intent(in) :: key
-		integer(8), intent(in) :: val
-		integer(8) :: i
-		integer(8) :: hash, idx
+		integer(kind=8), intent(in) :: val
+		!********
+		integer(kind=8) :: i, n, n0
+		type(map_entry_i64_t), allocatable :: old_entries(:)
 
-		if (this%len_ * 2 >= size(this%entries)) then
-		resize_block: block
+		n0 = size(this%entries)
+		if (this%len_ * 2 >= n0) then
 			! Resize the entries array if load factor exceeds 0.5
-			integer(8) :: new_size, old_size
-			type(map_entry_i64_t), allocatable :: old_entries(:)
-			old_size = size(this%entries)
-			new_size = old_size * 2
-			old_entries = this%entries
-			deallocate(this%entries)
-			allocate(this%entries(new_size))
-			!this%entries = map_entry_i64_t()  ! Reset all entries
-			!this%entries(:)%key = ""  ! reset all entries TODO?
+			n = n0 * 2
+			call move_alloc(this%entries, old_entries)
+			allocate(this%entries(n))
 			this%len_ = 0
-			do i = 1, old_size
+			do i = 1, n0
 				if (allocated(old_entries(i)%key)) then
-					! Why is this recursive?
-					call this%set(old_entries(i)%key, old_entries(i)%val)
+					call this%set_core(old_entries(i)%key, old_entries(i)%val)
 				end if
 			end do
 			deallocate(old_entries)
-		end block resize_block
 		end if
 
-		! TODO: make this part a separate "set_core*" routine and then get rid
-		! of the recursion above
+		call this%set_core(key, val)
+
+	end subroutine set_map_i64
+
+	subroutine set_map_i64_core(this, key, val)
+		! This fn just sets without resizing
+		class(map_i64_t), intent(inout) :: this
+		character(len=*), intent(in) :: key
+		integer(8), intent(in) :: val
+		!********
+		integer(8) :: hash, idx, n
+
 		hash = djb2_hash(key)
-		idx = mod(hash, size(this%entries)) + 1
+		n = size(this%entries)
+		idx = mod(hash, n) + 1
 		do
 			if (.not. allocated(this%entries(idx)%key)) then
 				! Empty slot found, insert new entry
-				!allocate(character(len=len_trim(key)) :: this%entries(idx)%key)
 				this%entries(idx)%key = key
 				this%entries(idx)%val = val
 				this%len_ = this%len_ + 1
@@ -221,11 +230,11 @@ contains
 				exit
 			else
 				! Collision, try next index (linear probing)
-				idx = mod(idx, size(this%entries)) + 1
+				idx = mod(idx, n) + 1
 			end if
 		end do
 
-	end subroutine set_map_i64
+	end subroutine set_map_i64_core
 
 	function get_map_i64(this, key, found) result(val)
 		! Get a value by key from the map

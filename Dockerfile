@@ -1,25 +1,23 @@
 
 FROM rockylinux:9
 
+ARG AOC_GPG_PASSPHRASE
+
 RUN dnf update -y && dnf install -y \
 	gfortran \
 	which
 
 WORKDIR /workdir/aoc-fortran
 
-# bust cache
-RUN echo 1
-
-# The .dockerfile stops ADD from copying build output, e.g. .o files
+# The .dockerignore stops ADD from copying build output, e.g. .o files
 ADD . .
-
-ARG AOC_GPG_PASSPHRASE
-#ENV AOC_GPG_PASSPHRASE=$AOC_GPG_PASSPHRASE
 
 # The rest should be a bash script (run.sh), not directly in Dockerfile
 
 #****************
 WORKDIR /workdir/aoc-fortran/2025/10
+
+# Should be able to just run decrypt-everything.sh to do this for all dirs
 
 RUN ../../decrypt-aoc.sh input.txt.gpg
 RUN ../../decrypt-aoc.sh test-input.txt.gpg

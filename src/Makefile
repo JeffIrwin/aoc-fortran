@@ -28,8 +28,9 @@ LIB = aoc.a
 all: debug
 
 # Interdependencies within lib
-args.o: utils.F90
+args.o:  utils.F90
 blarg.o: utils.F90
+map.o:   utils.F90
 
 debug:   $(LIB)
 release: $(LIB)

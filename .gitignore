@@ -1,8 +1,9 @@
 
-build/
 input.txt
 test-input.txt
+test-input2.txt
 
+build/
 *.a
 *.o
 main

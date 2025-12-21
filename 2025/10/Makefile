@@ -11,7 +11,7 @@ export BUILD_DIR = build
 export FFLAGS = -Wall -Wextra -Wno-tabs  # warnings
 FFLAGS += -Wno-maybe-uninitialized  # ignore incorrect warnings
 FFLAGS += -Wno-uninitialized
-FFLAGS += -J$(abspath $(BUILD_DIR))  # shared module output dir
+FFLAGS += -J$(abspath $(LIB_SRC_DIR)/$(BUILD_DIR))  # shared module output dir
 FFLAGS += -I$(abspath $(LIB_SRC_DIR)/$(BUILD_DIR))  # include dir
 
 # Debug compile flags
@@ -57,7 +57,7 @@ REL:
 	$(eval CONFIG = release)
 
 $(LIB): $(LIB_SRC_DIR)
-	mkdir -p $(BUILD_DIR)
+	mkdir -p $(LIB_SRC_DIR)/$(BUILD_DIR)
 	$(MAKE) -C $(LIB_SRC_DIR) $(CONFIG)
 
 # I previously had separate binary output folders for objects and executables,

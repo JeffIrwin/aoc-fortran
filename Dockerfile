@@ -39,6 +39,6 @@ RUN ../../decrypt-aoc.sh test-input2.txt.gpg
 
 RUN cmake -S . -B build && cmake --build build #--verbose
 RUN ./main --assert -1 -t
-RUN ./main -2 -i test-input2.txt #--assert
+RUN ./main -2 -i test-input2.txt --assert
 RUN ./main --assert
 

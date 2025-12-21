@@ -9,10 +9,13 @@
 #     make [debug|release]
 #     ./main -h
 
-# Source files
+# Source files. Order matters
 SRC = \
 	utils.F90 \
 	blarg.F90 \
+	map_i32.F90 \
+	map_i64.F90 \
+	map_str.F90 \
 	map.F90 \
 	args.F90
 
@@ -28,9 +31,18 @@ LIB = aoc.a
 all: debug
 
 # Interdependencies within lib
+
 args.o:  utils.F90
 blarg.o: utils.F90
-map.o:   utils.F90
+
+map_i32.o: utils.F90
+map_i64.o: utils.F90
+map_str.o: utils.F90
+map.o: map_i32.F90
+map.o: map_i64.F90
+map.o: map_str.F90
+
+#****************
 
 debug:   $(LIB)
 release: $(LIB)

@@ -13,6 +13,8 @@ set(SRCS
 	utils.F90
 )
 
+# Set module output dir
 add_compile_options("-J${CMAKE_CURRENT_SOURCE_DIR}/build/")
+
 add_library(${PROJECT} ${SRCS})
 

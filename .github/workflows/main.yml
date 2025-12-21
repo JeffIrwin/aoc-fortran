@@ -11,6 +11,8 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - name: Test in docker
+      env:
+        AOC_GPG_PASSPHRASE: ${{ secrets.AOC_GPG_PASSPHRASE }}
       run: |
-        docker build . -t rocky
+        docker build . -t rocky --build-arg AOC_GPG_PASSPHRASE=$AOC_GPG_PASSPHRASE
 

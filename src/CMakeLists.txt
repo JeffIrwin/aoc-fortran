@@ -14,7 +14,7 @@ set(SRCS
 )
 
 # Set module output dir
-add_compile_options("-J${CMAKE_CURRENT_SOURCE_DIR}/build/")
+add_compile_options("-J${CMAKE_CURRENT_SOURCE_DIR}/build/${CMAKE_BUILD_TYPE}")
 
 add_library(${PROJECT} ${SRCS})
 

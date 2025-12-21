@@ -13,7 +13,6 @@ set(SRCS
 	utils.F90
 )
 
-#add_compile_options(-ffree-form)
-add_compile_options("-J${CMAKE_SOURCE_DIR}/build/")
+add_compile_options("-J${CMAKE_CURRENT_SOURCE_DIR}/build/")
 add_library(${PROJECT} ${SRCS})
 

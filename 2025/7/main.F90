@@ -38,7 +38,6 @@ function part1(filename) result(ans_)
 	ny = size(g, 2)
 	do y = 2, ny
 		do x = 1, nx
-			!if (g0(x, y) == "^") cycle
 			if (g0(x, y-1) == "S") g(x,y) = "|"
 
 			if (g(x, y-1) == "|" .and. g0(x, y-1) /= "^") then
@@ -47,7 +46,6 @@ function part1(filename) result(ans_)
 		end do
 
 		do x = 1, nx
-			!if (g0(x-1, y) == "^") g(x,y) = "|"
 			if (x > 1) then
 				if (g0(x-1, y) == "^" .and. g(x-1, y) == "|") then
 					g(x,y) = "|"
@@ -60,9 +58,6 @@ function part1(filename) result(ans_)
 					g(x,y) = "|"
 				end if
 			end if
-
-			!if (g0(x+1, y) == "^") g(x,y) = "|"
-
 		end do
 	end do
 	!call print_mat_char("g = ", g)
@@ -90,6 +85,12 @@ function part2(filename) result(ans_)
 	!print *, "g = ", g
 	!call print_mat_char("g = ", g)
 	g0 = g  ! backup unmodified grid to g0
+
+	! This can be golfed down quite a bit more:
+	!
+	!     https://github.com/JeffIrwin/aoc-syntran/blob/main/2025/7/part-2-readable.syntran
+	!
+	! But this is the best I could quickly do without cheating
 
 	! First pass: mark the locations that we can get to with pipe "|" characters
 	nx = size(g, 1)
@@ -132,12 +133,10 @@ function part2(filename) result(ans_)
 			if (x > 1) then
 				if (g0(x-1, y) == "^" .and. g(x-1, y) == "|") then
 					ig(x,y) = ig(x,y) + ig(x-1, y)
-					!sum_ = sum_ + 1
 				end if
 			end if
 			if (x < nx) then
 				if (g0(x+1, y) == "^" .and. g(x+1, y) == "|") then
-					!g(x,y) = "|"
 					ig(x,y) = ig(x,y) + ig(x+1, y)
 				end if
 			end if

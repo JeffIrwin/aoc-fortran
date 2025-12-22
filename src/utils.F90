@@ -205,6 +205,54 @@ end subroutine push_str
 
 !===============================================================================
 
+function countln(filename) result(nline)
+	character(len=*), intent(in) :: filename
+	integer :: nline
+	!********
+	character :: c
+	integer :: iu, io
+
+	nline = 0
+	open(newunit = iu, file = filename, action = "read")
+	do
+		read(iu, "(a)", iostat = io) c
+		if (io /= EXIT_SUCCESS) exit
+		nline = nline + 1
+	end do
+
+end function countln
+
+!===============================================================================
+
+function read_mat_char(filename, iostat) result(mat)
+	character(len=*), intent(in) :: filename
+	integer, optional :: iostat
+	character, allocatable :: mat(:,:)
+	!********
+	integer :: nx, ny, iu, x, y
+	character(len=:), allocatable :: line
+
+	ny = countln(filename)
+	open(newunit = iu, file = filename, action = "read")
+	line = read_line(iu)
+	nx = len(line)
+	print *, "nx = ", nx
+
+	allocate(mat(nx, ny))
+	!mat = "."
+	do y = 1, ny
+		do x = 1, nx
+			mat(x,y) = line(x:x)
+		end do
+
+		line = read_line(iu)
+	end do
+	!print *, "mat = ", mat
+
+end function read_mat_char
+
+!===============================================================================
+
 function read_line(iu, iostat) result(str)
 
 	! c.f. aoc-2022/utils.f90 and syntran/src/utils.f90
@@ -391,6 +439,71 @@ subroutine print_mat_i32(msg, a)
 	end do
 
 end subroutine print_mat_i32
+
+!===============================================================================
+
+subroutine print_mat_i64(msg, a)
+	! Pretty-print a matrix
+	!
+	! Note that this is transposed compared to Fortran's internal memory layout
+	!
+	! TODO: optional output file unit arg
+	character(len = *), intent(in) :: msg
+	integer(kind=8), intent(in) :: a(:,:)
+	!********
+	integer :: i, j, m, n
+	integer, parameter :: unit_ = output_unit
+	m = size(a,1)
+	n = size(a,2)
+	write(unit_, "(a)") " " // msg
+	do i = 1, m
+		do j = 1, n
+			write(*, "(i6)", advance = "no") a(i,j)
+		end do
+		write(unit_, *)
+	end do
+
+end subroutine print_mat_i64
+
+!===============================================================================
+
+subroutine print_mat_char(msg, a, transpose_)
+	! Pretty-print a matrix
+	!
+	! Note that this is transposed compared to Fortran's internal memory layout
+	!
+	! TODO: optional output file unit arg
+	character(len = *), intent(in) :: msg
+	character, intent(in) :: a(:,:)
+	logical, optional, intent(in) :: transpose_
+	!********
+	integer :: i, j, m, n
+	integer, parameter :: unit_ = output_unit
+	logical :: transpose__
+	transpose__ = .false.
+	if (present(transpose_)) transpose__ = transpose_
+	m = size(a,1)
+	n = size(a,2)
+	write(unit_, "(a)") " " // msg
+
+	if (transpose__) then
+		do i = 1, m
+			do j = 1, n
+				write(*, "(a)", advance = "no") a(i,j)
+			end do
+			write(unit_, *)
+		end do
+		return
+	end if
+
+	do j = 1, n
+		do i = 1, m
+			write(*, "(a)", advance = "no") a(i,j)
+		end do
+		write(unit_, *)
+	end do
+
+end subroutine print_mat_char
 
 !===============================================================================
 

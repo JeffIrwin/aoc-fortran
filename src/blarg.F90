@@ -40,6 +40,11 @@ module blarg_m
 		procedure :: zeros_mat_i32
 	end interface zeros_i32
 
+	interface zeros_i64
+		procedure :: zeros_vec_i64
+		procedure :: zeros_mat_i64
+	end interface zeros_i64
+
 	interface ones_i32
 		procedure :: ones_vec_i32
 		procedure :: ones_mat_i32
@@ -200,14 +205,6 @@ function zeros_mat_f32(m, n) result(a)
 	a = 0
 end function zeros_mat_f32
 
-function zeros_mat_i32(m, n) result(a)
-	! m x n matrix of 0
-	integer, intent(in) :: m, n
-	integer, allocatable :: a(:,:)
-	allocate(a(m, n))
-	a = 0
-end function zeros_mat_i32
-
 function zeros_vec_f32(n) result(a)
 	! Size n vector of 0
 	integer, intent(in) :: n
@@ -248,6 +245,14 @@ function ones_vec_i32(n) result(a)
 	a = 1
 end function ones_vec_i32
 
+function zeros_mat_i32(m, n) result(a)
+	! m x n matrix of 0
+	integer, intent(in) :: m, n
+	integer, allocatable :: a(:,:)
+	allocate(a(m, n))
+	a = 0
+end function zeros_mat_i32
+
 function zeros_vec_i32(n) result(a)
 	! Size n vector of 0
 	integer, intent(in) :: n
@@ -255,6 +260,22 @@ function zeros_vec_i32(n) result(a)
 	allocate(a(n))
 	a = 0
 end function zeros_vec_i32
+
+function zeros_mat_i64(m, n) result(a)
+	! m x n matrix of 0
+	integer, intent(in) :: m, n
+	integer(kind=8), allocatable :: a(:,:)
+	allocate(a(m, n))
+	a = 0
+end function zeros_mat_i64
+
+function zeros_vec_i64(n) result(a)
+	! Size n vector of 0
+	integer, intent(in) :: n
+	integer(kind=8), allocatable :: a(:)
+	allocate(a(n))
+	a = 0
+end function zeros_vec_i64
 
 function falses_vec(n) result(a)
 	! Size n vector of .false.

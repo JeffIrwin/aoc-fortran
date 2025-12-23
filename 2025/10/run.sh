@@ -2,9 +2,13 @@
 
 set -exu
 
-# TODO: get config from cmd arg
 config=Debug
-#config=Release
+for arg in "$@"; do
+	echo "arg = $arg"
+	if [[ "${arg,,}" == "release" ]]; then
+		config=Release
+	fi
+done
 
 verbose=""
 #verbose=--verbose

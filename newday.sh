@@ -37,8 +37,9 @@ fi
 
 mkdir -p $1
 
-# TODO: update for Fortran
-cp template.syntran $1/main.syntran
+cp template/main.F90       $1/
+cp template/CMakeLists.txt $1/
+cp template/run.sh         $1/
 
 pushd $1
 

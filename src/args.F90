@@ -22,7 +22,7 @@ contains
 function parse_args() result(args)
 	type(args_t) :: args
 	!********
-	character(len = :), allocatable :: arg!, arg0
+	character(len = :), allocatable :: arg
 	integer :: i, nargs, len_, io, ipos
 	logical :: error = .false.
 	type(str_vec_t) :: argv
@@ -57,7 +57,6 @@ function parse_args() result(args)
 	! Parse the args
 	i = 0
 	ipos = 0
-	!arg0 = ""
 	do while (i < nargs)
 		i = i + 1
 		arg = argv%vec(i)%str
@@ -69,7 +68,9 @@ function parse_args() result(args)
 
 		case ("-t", "--test")
 			args%test = .true.
-			args%input_filename = "test-input.txt"
+			if (.not. args%has_input_filename) then
+				args%input_filename = "test-input.txt"
+			end if
 
 		case ("-a", "--assert")
 			args%assert = .true.
@@ -93,13 +94,7 @@ function parse_args() result(args)
 
 		end select
 
-		!arg0 = arg
 	end do
-
-	if (args%test .and. args%has_input_filename) then
-		write(*,*) ERROR_STR//'command arguments "--test" and "--input" cannot both be used'
-		error = .true.
-	end if
 
 	!********
 
@@ -107,8 +102,6 @@ function parse_args() result(args)
 
 		write(*,*) fg_bold//"Usage:"//color_reset
 		write(*,*) "    main -h | --help"
-		!write(*,*) "    main -1 | --part1"
-		!write(*,*) "    main -2 | --part2"
 		write(*,*) "    main [-1 | --part1] [-2 | --part2]"
 		write(*,*) "    main [-t | --test] [(-i|--input) file.txt]"
 		write(*,*) "    main -a | --assert"

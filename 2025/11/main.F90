@@ -2,12 +2,7 @@
 module aoc_m
 	use iso_fortran_env
 	use utils
-
-	! TODO: add this `use map_m` to template but commented-out? Don't see a
-	! downside to always including it. Actually just copy this back to the
-	! template and down-edit it again. There are several other changes, e.g.
-	! to_str(sum_) logging and TBD actual/expected assert logging, int kinds,
-	! etc.
+	use blarg_m
 	use map_m
 
 	implicit none
@@ -21,7 +16,7 @@ function part1(filename) result(ans_)
 	!********
 
 	integer :: iu, io
-	integer(kind=8) :: sum_  ! TODO: fix kind in template
+	integer(kind=8) :: sum_
 	character(len = :), allocatable :: str_, source, sinks
 	type(str_vec_t) :: chunks
 	type(map_str_t) :: map
@@ -59,7 +54,7 @@ function part2(filename) result(ans_)
 	!********
 
 	integer :: iu, io
-	integer(kind=8) :: sum_  ! TODO: fix kind in template
+	integer(kind=8) :: sum_
 	integer(kind=8) :: nsvr2fft, nfft2dac, ndac2out, nsvr2dac, ndac2fft, nfft2out
 	character(len = :), allocatable :: str_, source, sinks
 	type(str_vec_t) :: chunks
@@ -254,14 +249,13 @@ program main
 		end if
 
 		if (do_p1 .and. p1 /= expect1) then
-			write(*,*) ERROR_STR//"wrong part 1 answer"
-			! Print expected value?
+			write(*,*) ERROR_STR//'wrong part 1 answer.  Got "' &
+				//p1//'", expected "'//expect1//'"'
 			error = .true.
 		end if
 		if (do_p2 .and. p2 /= expect2) then
-			! TODO: this doesn't assert part 2 test correctly because it has a
-			! different input and the "-t" arg is blocked
-			write(*,*) ERROR_STR//"wrong part 2 answer"
+			write(*,*) ERROR_STR//'wrong part 2 answer.  Got "' &
+				//p2//'", expected "'//expect2//'"'
 			error = .true.
 		end if
 		if (error) call panic("")

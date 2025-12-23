@@ -2,6 +2,9 @@
 module aoc_m
 	use iso_fortran_env
 	use utils
+	use blarg_m
+	use map_m
+
 	implicit none
 contains
 
@@ -12,7 +15,8 @@ function part1(filename) result(ans_)
 	character(len = :), allocatable :: ans_
 	!********
 
-	integer :: iu, io, sum_
+	integer :: iu, io
+	integer(kind=8) :: sum_
 	character(len = :), allocatable :: str_
 
 	sum_ = 0
@@ -21,10 +25,11 @@ function part1(filename) result(ans_)
 		str_ = read_line(iu, io)
 		if (io /= 0) exit
 		print *, "str_ = ", str_
+
 	end do
 	close(iu)
 
-	write(*,*) "part 1 = ", sum_
+	write(*,*) "part 1 = ", to_str(sum_)
 	ans_ = to_str(sum_)
 
 end function part1
@@ -70,12 +75,13 @@ program main
 		end if
 
 		if (do_p1 .and. p1 /= expect1) then
-			write(*,*) ERROR_STR//"wrong part 1 answer"
-			! Print expected value?
+			write(*,*) ERROR_STR//'wrong part 1 answer.  Got "' &
+				//p1//'", expected "'//expect1//'"'
 			error = .true.
 		end if
 		if (do_p2 .and. p2 /= expect2) then
-			write(*,*) ERROR_STR//"wrong part 2 answer"
+			write(*,*) ERROR_STR//'wrong part 2 answer.  Got "' &
+				//p2//'", expected "'//expect2//'"'
 			error = .true.
 		end if
 		if (error) call panic("")

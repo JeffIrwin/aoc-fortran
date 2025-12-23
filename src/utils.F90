@@ -205,6 +205,7 @@ end subroutine push_str
 
 !===============================================================================
 
+! TODO: name count_lines() for consistency with read_line()
 function countln(filename) result(nline)
 	character(len=*), intent(in) :: filename
 	integer :: nline
@@ -216,6 +217,7 @@ function countln(filename) result(nline)
 	open(newunit = iu, file = filename, action = "read")
 	do
 		read(iu, "(a)", iostat = io) c
+		! TODO: test on file with blank lines. May need to check io /= iostat_end
 		if (io /= EXIT_SUCCESS) exit
 		nline = nline + 1
 	end do
@@ -236,7 +238,7 @@ function read_mat_char(filename, iostat) result(mat)
 	open(newunit = iu, file = filename, action = "read")
 	line = read_line(iu)
 	nx = len(line)
-	print *, "nx = ", nx
+	!print *, "nx = ", nx
 
 	allocate(mat(nx, ny))
 	!mat = "."
@@ -488,6 +490,7 @@ subroutine print_mat_char(msg, a, transpose_)
 
 	if (transpose__) then
 		do i = 1, m
+			! TODO: unroll inner loops for all print_mat*() fns
 			do j = 1, n
 				write(*, "(a)", advance = "no") a(i,j)
 			end do

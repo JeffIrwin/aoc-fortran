@@ -11,7 +11,8 @@ if(NOT CMAKE_BUILD_TYPE)
 	set(CMAKE_BUILD_TYPE "Debug" CACHE STRING "Choose Release or Debug" FORCE)
 endif()
 
-# TODO: set fortran flags depending on build type
+# TODO: set fortran flags depending on build type. And just use
+# add_compile_options() instead of manually setting CMAKE_Fortran_FLAGS_DEBUG
 set(CMAKE_Fortran_FLAGS_DEBUG "-g -O0 -fcheck=all -fimplicit-none -Werror=implicit-interface")
 
 set(LIB_DIR "${CMAKE_SOURCE_DIR}/../../src")

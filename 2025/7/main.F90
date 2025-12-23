@@ -119,6 +119,7 @@ function part2(filename) result(ans_)
 	end do
 	!call print_mat_char("g = ", g)
 
+	! Second pass: add up path counts on integer matrix `ig`
 	ig = zeros_i64(nx, ny)
 	!call print_mat_i64("ig = ", ig)
 	do y = 2, ny
@@ -191,7 +192,7 @@ program main
 
 		if (do_p1 .and. p1 /= expect1) then
 			write(*,*) ERROR_STR//"wrong part 1 answer"
-			! Print expected value?
+			! TODO: print expected value
 			error = .true.
 		end if
 		if (do_p2 .and. p2 /= expect2) then

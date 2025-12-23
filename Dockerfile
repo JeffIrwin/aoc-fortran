@@ -13,6 +13,16 @@ WORKDIR /workdir/aoc-fortran
 # The .dockerignore stops ADD from copying build output, e.g. .o files
 ADD . .
 
+#****************
+# Run unit test
+WORKDIR /workdir/aoc-fortran/test/unit
+
+#RUN cmake -S . -B build && cmake --build build #--verbose
+#RUN ./main
+RUN ./run.sh  # debug by default
+RUN ./run.sh Release
+
+#****************
 # The rest should be a bash script (run.sh), not directly in Dockerfile
 #
 # TODO: cover debug and release profiles. Do every day with debug and then every

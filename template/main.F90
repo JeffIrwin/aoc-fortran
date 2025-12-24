@@ -1,25 +1,22 @@
 
 module aoc_m
 	use iso_fortran_env
-	use utils
-	use blarg_m
-	use map_m
-
+	use aoc_all_m
 	implicit none
 contains
 
 !===============================================================================
 
-function part1(filename) result(ans_)
-	character(len = *), intent(in) :: filename
+function part1(args) result(ans_)
+	type(args_t), intent(in) :: args
 	character(len = :), allocatable :: ans_
 	!********
-
+	character(len = :), allocatable :: filename, str_
 	integer :: iu, io
 	integer(kind=8) :: sum_
-	character(len = :), allocatable :: str_
 
 	sum_ = 0
+	filename = args%input_filename
 	open(newunit = iu, file = filename, action = "read")
 	do
 		str_ = read_line(iu, io)
@@ -60,8 +57,8 @@ program main
 	p1 = ""
 	p2 = ""
 
-	if (do_p1) p1 = part1(args%input_filename)
-	!if (do_p2) p2 = part2(args%input_filename)
+	if (do_p1) p1 = part1(args)
+	!if (do_p2) p2 = part2(args)
 
 	write(*,*) "    "//p1//":"//p2
 

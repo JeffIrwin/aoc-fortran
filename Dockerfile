@@ -62,3 +62,13 @@ RUN cmake -S . -B build && cmake --build build #--verbose
 RUN ./main --assert --test
 RUN ./main --assert
 
+#****************
+WORKDIR /workdir/aoc-fortran/2025/8
+
+RUN ../../decrypt-aoc.sh input.txt.gpg
+RUN ../../decrypt-aoc.sh test-input.txt.gpg
+
+RUN cmake -S . -B build && cmake --build build #--verbose
+RUN ./main --assert --test
+RUN ./main --assert
+

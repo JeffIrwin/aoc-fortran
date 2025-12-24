@@ -13,15 +13,12 @@ Advent of code in Fortran (again)
 - Add README notes:
   * links to other aoc repos (syntran, older fortran)
   * how to run things in this repo
-- Update newday and run scripts for Fortran
 - Built-in timer instead of shell "time"
 
 Soon:
 - cmd arg parsing
   * --color never|auto|always (syntran has this)
 - Prototypical advent of code problems:
-  * Sorting routines -- index array, in-place, type overloads
-  * Grid problem and reading character matrices
   * Dijkstra problem (minheap)
 
 ## References and links

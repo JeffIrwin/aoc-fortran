@@ -65,8 +65,8 @@ function part1(args) result(ans_)
 	adj = zeros_i32(NADJ_CAP, n)
 	nadj = zeros_i32(n)
 	do i = 1, ncon
-		i1 = dists(2, idx(i))
-		i2 = dists(3, idx(i))
+		i1 = int(dists(2, idx(i)), 4)
+		i2 = int(dists(3, idx(i)), 4)
 
 		!print *, "i12 = ", i1, i2
 
@@ -121,8 +121,8 @@ function part2(args) result(ans_)
 
 	character(len = :), allocatable :: filename, str_
 	integer, parameter :: NADJ_CAP = 64
-	integer :: iu, io, n, i, j, k, i1, i2, ncon, icom, ncom
-	integer, allocatable :: mat(:,:), adj(:,:), nadj(:), icoms(:), ncoms(:)
+	integer :: iu, io, n, i, j, k, i1, i2, icom
+	integer, allocatable :: mat(:,:), adj(:,:), nadj(:), icoms(:)
 	integer(kind=8) :: sum_, diff(3)
 	integer(kind=8), allocatable :: dists(:,:), idx(:)
 
@@ -159,9 +159,8 @@ function part2(args) result(ans_)
 	adj = zeros_i32(NADJ_CAP, n)
 	nadj = zeros_i32(n)
 	do j = 1, size(dists,2)
-		i1 = dists(2, idx(j))
-		i2 = dists(3, idx(j))
-
+		i1 = int(dists(2, idx(j)), 4)
+		i2 = int(dists(3, idx(j)), 4)
 		!print *, "i12 = ", i1, i2
 
 		! Connect node i1 to i2 and vice-versa
@@ -175,7 +174,7 @@ function part2(args) result(ans_)
 		icoms = zeros_i32(n)
 		do i = 1, n
 			if (icoms(i) > 0) cycle
-	
+
 			! Node `i` is in component `icom`. Do a DFS and mark all the nodes that
 			! are connected to it
 			call dfs(i, icom, icoms, adj, nadj)
@@ -185,8 +184,7 @@ function part2(args) result(ans_)
 			else
 				exit
 			end if
-	
-			!icom = icom + 1
+
 		end do
 		if (sum_ > 0) exit
 	end do

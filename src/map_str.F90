@@ -1,5 +1,5 @@
 module map_str_m
-	use utils
+	use utils_m
 	implicit none
 
 	private :: map_entry_str_t, set_map_str_core

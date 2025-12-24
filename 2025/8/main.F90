@@ -1,11 +1,7 @@
 
 module aoc_m
 	use iso_fortran_env
-	use args_m
-	use blarg_m
-	use map_m
-	use sort_m  ! TODO: add to template, or better yet, make a container module in lib
-	use utils
+	use aoc_all_m
 	implicit none
 contains
 
@@ -53,7 +49,7 @@ function part1(args) result(ans_)
 	end do
 	!call print_mat_i64("dists = ", transpose(dists), 9)
 
-	idx = sortidx_i64(dists(1,:))
+	idx = sort_index(dists(1,:))
 	!print *, "idx = ", idx
 	!call print_mat_i64("dists (sorted) = ", transpose(dists(:,idx)), 9)
 
@@ -102,8 +98,7 @@ function part1(args) result(ans_)
 		ncoms(i) = count(icoms == i)
 	end do
 	!print *, "ncoms = ", ncoms
-	idx = sortidx_i32(ncoms)
-	ncoms = ncoms(idx)
+	call sort(ncoms)
 
 	sum_ = product(ncoms(ncom-2: ncom))
 
@@ -152,7 +147,7 @@ function part2(args) result(ans_)
 	end do
 	!call print_mat_i64("dists = ", transpose(dists), 9)
 
-	idx = sortidx_i64(dists(1,:))
+	idx = sort_index(dists(1,:))
 	!print *, "idx = ", idx
 	!call print_mat_i64("dists (sorted) = ", transpose(dists(:,idx)), 9)
 
@@ -177,6 +172,9 @@ function part2(args) result(ans_)
 
 			! Node `i` is in component `icom`. Do a DFS and mark all the nodes that
 			! are connected to it
+			!
+			! This could be faster by incrementally editing the graph instead of
+			! re-marking the whole component from scratch after every connection
 			call dfs(i, icom, icoms, adj, nadj)
 			if (all(icoms == 1)) then
 				sum_ = mat(1,i1) * mat(1,i2)

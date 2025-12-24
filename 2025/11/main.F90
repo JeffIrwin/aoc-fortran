@@ -1,7 +1,7 @@
 
 module aoc_m
 	use iso_fortran_env
-	use utils
+	use utils_m
 	use blarg_m
 	use map_m
 

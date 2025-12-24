@@ -1,5 +1,5 @@
 module map_i32_m
-	use utils
+	use utils_m
 	implicit none
 
 	private :: map_entry_i32_t, set_map_i32_core

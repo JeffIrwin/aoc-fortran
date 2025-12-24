@@ -4,11 +4,34 @@ module sort_m
 	use blarg_m
 	implicit none
 
+	interface sort
+		! Sort in/out array in-place
+		procedure :: sort_i32
+		procedure :: sort_i64
+	end interface sort
+
+	interface sort_index
+		! Return an index array without modifying arg
+		procedure :: sort_index_i32
+		procedure :: sort_index_i64
+	end interface sort_index
+
+	private :: partition_i32, partition_i64
+	private :: sort_index_i32_sub, sort_index_i64_sub
+
 contains
 
 !===============================================================================
 
-function sortidx_i32(a) result(idx)
+subroutine sort_i32(a)
+	integer(kind=4), intent(inout) :: a(:)
+	!********
+	integer(kind=4), allocatable :: idx(:)
+	idx = sort_index(a)
+	a = a(idx)
+end subroutine sort_i32
+
+function sort_index_i32(a) result(idx)
 	integer(kind=4), intent(in) :: a(:)
 	integer(kind=4), allocatable :: idx(:)
 	!********
@@ -16,13 +39,13 @@ function sortidx_i32(a) result(idx)
 
 	n = size(a)
 	idx = range_i32(n)
-	call sortidx_i32_sub(a, idx, 1, n)
+	call sort_index_i32_sub(a, idx, 1, n)
 
-end function sortidx_i32
+end function sort_index_i32
 
 !===============================================================================
 
-recursive subroutine sortidx_i32_sub(a, idx, lo, hi)
+recursive subroutine sort_index_i32_sub(a, idx, lo, hi)
 	! Quicksort a rank-2 array a along its 2nd dimension and return the
 	! sort permutation idx
 	!
@@ -37,10 +60,10 @@ recursive subroutine sortidx_i32_sub(a, idx, lo, hi)
 	if (lo >= hi .or. lo < 1) return
 	p = partition_i32(a, idx, lo, hi)
 
-	call sortidx_i32_sub(a, idx, lo, p - 1)
-	call sortidx_i32_sub(a, idx, p + 1, hi)
+	call sort_index_i32_sub(a, idx, lo, p - 1)
+	call sort_index_i32_sub(a, idx, p + 1, hi)
 
-end subroutine sortidx_i32_sub
+end subroutine sort_index_i32_sub
 
 !===============================================================================
 
@@ -80,7 +103,15 @@ end function partition_i32
 
 !===============================================================================
 
-function sortidx_i64(a) result(idx)
+subroutine sort_i64(a)
+	integer(kind=8), intent(inout) :: a(:)
+	!********
+	integer(kind=8), allocatable :: idx(:)
+	idx = sort_index(a)
+	a = a(idx)
+end subroutine sort_i64
+
+function sort_index_i64(a) result(idx)
 	integer(kind=8), intent(in) :: a(:)
 	integer(kind=8), allocatable :: idx(:)
 	!********
@@ -88,13 +119,13 @@ function sortidx_i64(a) result(idx)
 
 	n = size(a)
 	idx = range_i64(n)
-	call sortidx_i64_sub(a, idx, 1_8, n)
+	call sort_index_i64_sub(a, idx, 1_8, n)
 
-end function sortidx_i64
+end function sort_index_i64
 
 !===============================================================================
 
-recursive subroutine sortidx_i64_sub(a, idx, lo, hi)
+recursive subroutine sort_index_i64_sub(a, idx, lo, hi)
 	! Quicksort a rank-2 array a along its 2nd dimension and return the
 	! sort permutation idx
 	!
@@ -109,10 +140,10 @@ recursive subroutine sortidx_i64_sub(a, idx, lo, hi)
 	if (lo >= hi .or. lo < 1) return
 	p = partition_i64(a, idx, lo, hi)
 
-	call sortidx_i64_sub(a, idx, lo, p - 1)
-	call sortidx_i64_sub(a, idx, p + 1, hi)
+	call sort_index_i64_sub(a, idx, lo, p - 1)
+	call sort_index_i64_sub(a, idx, p + 1, hi)
 
-end subroutine sortidx_i64_sub
+end subroutine sort_index_i64_sub
 
 !===============================================================================
 

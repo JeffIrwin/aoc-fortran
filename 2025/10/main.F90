@@ -4,7 +4,7 @@
 
 module aoc_m
 	use iso_fortran_env
-	use utils
+	use utils_m
 	implicit none
 contains
 

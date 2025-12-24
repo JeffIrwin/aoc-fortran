@@ -4,6 +4,7 @@ set(PROJECT "aoc-fortran")
 project(${PROJECT} Fortran)
 
 set(SRCS
+	aoc_all.F90
 	args.F90
 	blarg.F90
 	map.F90

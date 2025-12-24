@@ -1,5 +1,5 @@
 
-module utils
+module utils_m
 
 	use iso_fortran_env
 	implicit none
@@ -225,9 +225,8 @@ end function count_lines
 
 !===============================================================================
 
-function read_mat_char(filename, iostat) result(mat)
+function read_mat_char(filename) result(mat)
 	character(len=*), intent(in) :: filename
-	integer, optional :: iostat
 	character, allocatable :: mat(:,:)
 	!********
 	integer :: nx, ny, iu, x, y
@@ -566,7 +565,7 @@ end function read_i32_delims
 
 !===============================================================================
 
-end module utils
+end module utils_m
 
 !===============================================================================
 

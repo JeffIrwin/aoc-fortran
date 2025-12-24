@@ -1,7 +1,7 @@
 
 module test_m
 
-	use utils
+	use utils_m
 	implicit none
 
 	!********

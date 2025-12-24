@@ -1,6 +1,6 @@
 module args_m
 
-	use utils
+	use utils_m
 	implicit none
 
 	type args_t

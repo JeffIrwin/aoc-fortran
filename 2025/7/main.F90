@@ -1,7 +1,7 @@
 
 module aoc_m
 	use iso_fortran_env
-	use utils
+	use utils_m
 
 	! TODO: add this `use map_m` to template but commented-out? Don't see a
 	! downside to always including it. Actually just copy this back to the

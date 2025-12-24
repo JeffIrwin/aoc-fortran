@@ -8,3 +8,6 @@
 **/*.o
 **/main
 
+.git/
+.github/
+

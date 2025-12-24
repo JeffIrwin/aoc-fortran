@@ -29,6 +29,26 @@ RUN ./run.sh Release
 # day with release to avoid extra cleaning and rebuilding
 
 #****************
+WORKDIR /workdir/aoc-fortran/2025/7
+
+RUN ../../decrypt-aoc.sh input.txt.gpg
+RUN ../../decrypt-aoc.sh test-input.txt.gpg
+
+RUN cmake -S . -B build && cmake --build build #--verbose
+RUN ./main --assert --test
+RUN ./main --assert
+
+#****************
+WORKDIR /workdir/aoc-fortran/2025/8
+
+RUN ../../decrypt-aoc.sh input.txt.gpg
+RUN ../../decrypt-aoc.sh test-input.txt.gpg
+
+RUN cmake -S . -B build && cmake --build build #--verbose
+RUN ./main --assert --test
+RUN ./main --assert
+
+#****************
 WORKDIR /workdir/aoc-fortran/2025/10
 
 # Should be able to just run decrypt-everything.sh to do this for all dirs
@@ -50,25 +70,5 @@ RUN ../../decrypt-aoc.sh test-input2.txt.gpg
 RUN cmake -S . -B build && cmake --build build #--verbose
 RUN ./main --assert -1 -t
 RUN ./main -2 -i test-input2.txt #--assert
-RUN ./main --assert
-
-#****************
-WORKDIR /workdir/aoc-fortran/2025/7
-
-RUN ../../decrypt-aoc.sh input.txt.gpg
-RUN ../../decrypt-aoc.sh test-input.txt.gpg
-
-RUN cmake -S . -B build && cmake --build build #--verbose
-RUN ./main --assert --test
-RUN ./main --assert
-
-#****************
-WORKDIR /workdir/aoc-fortran/2025/8
-
-RUN ../../decrypt-aoc.sh input.txt.gpg
-RUN ../../decrypt-aoc.sh test-input.txt.gpg
-
-RUN cmake -S . -B build && cmake --build build #--verbose
-RUN ./main --assert --test
 RUN ./main --assert
 

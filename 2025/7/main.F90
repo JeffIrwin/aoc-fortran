@@ -2,15 +2,8 @@
 module aoc_m
 	use iso_fortran_env
 	use utils_m
-
-	! TODO: add this `use map_m` to template but commented-out? Don't see a
-	! downside to always including it. Actually just copy this back to the
-	! template and down-edit it again. There are several other changes, e.g.
-	! to_str(sum_) logging and TBD actual/expected assert logging, int kinds,
-	! etc.
 	use map_m
 	use blarg_m
-
 	implicit none
 contains
 
@@ -23,7 +16,7 @@ function part1(filename) result(ans_)
 	!********
 
 	integer :: nx, ny, x, y
-	integer(kind=8) :: sum_  ! TODO: fix kind in template
+	integer(kind=8) :: sum_
 	character, allocatable :: g0(:,:), g(:,:)
 
 	sum_ = 0
@@ -76,7 +69,7 @@ function part2(filename) result(ans_)
 	!********
 
 	integer :: nx, ny, x, y
-	integer(kind=8) :: sum_  ! TODO: fix kind in template
+	integer(kind=8) :: sum_
 	character, allocatable :: g0(:,:), g(:,:)
 	integer(kind=8), allocatable :: ig(:,:)
 
@@ -192,12 +185,9 @@ program main
 
 		if (do_p1 .and. p1 /= expect1) then
 			write(*,*) ERROR_STR//"wrong part 1 answer"
-			! TODO: print expected value
 			error = .true.
 		end if
 		if (do_p2 .and. p2 /= expect2) then
-			! TODO: this doesn't assert part 2 test correctly because it has a
-			! different input and the "-t" arg is blocked
 			write(*,*) ERROR_STR//"wrong part 2 answer"
 			error = .true.
 		end if

@@ -310,7 +310,6 @@ function part1(filename) result(ans_)
 			button_str = words%vec(i)%str
 			!print *, "button_str = ", button_str
 
-			! TODO: add parse_i32_delim() helper in utils
 			n = count_str_match(button_str, ",") + 1
 			allocate(ibuttons(n))
 			read(button_str(2: len(button_str)-1), *) ibuttons

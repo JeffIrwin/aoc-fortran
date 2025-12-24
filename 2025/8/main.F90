@@ -17,7 +17,8 @@ function part1(args) result(ans_)
 	integer :: iu, io, n, i, j, k, i1, i2, ncon, icom, ncom
 	integer, allocatable :: mat(:,:), adj(:,:), nadj(:), icoms(:), ncoms(:)
 	integer(kind=8) :: sum_, diff(3)
-	integer(kind=8), allocatable :: dists(:,:), idx(:)
+	integer(kind=8), allocatable :: dists(:,:)
+	integer(kind=4), allocatable :: idx(:)
 
 	filename = args%input_filename
 
@@ -119,7 +120,8 @@ function part2(args) result(ans_)
 	integer :: iu, io, n, i, j, k, i1, i2, icom
 	integer, allocatable :: mat(:,:), adj(:,:), nadj(:), icoms(:)
 	integer(kind=8) :: sum_, diff(3)
-	integer(kind=8), allocatable :: dists(:,:), idx(:)
+	integer(kind=8), allocatable :: dists(:,:)
+	integer(kind=4), allocatable :: idx(:)
 
 	filename = args%input_filename
 

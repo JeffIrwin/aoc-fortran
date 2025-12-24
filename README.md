@@ -8,8 +8,11 @@ Advent of code in Fortran (again)
 - try generic fns with unlimited polymorphic class(*) args
   * otherwise, overload things like print_mat_i32() and print_mat_f32() with a
     unified interface
-- utils
-  * Unit tests for utils
+- More unit tests:
+  * hash maps with random str keys/vals
+  * i64 and str val hash maps
+    + i32 done
+  * hash map with 1 space key, 2 spaces, 3 spaces, ... up to 256 spaces or more
 - Add README notes:
   * links to other aoc repos (syntran, older fortran)
   * how to run things in this repo

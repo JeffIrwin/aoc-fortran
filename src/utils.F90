@@ -205,8 +205,7 @@ end subroutine push_str
 
 !===============================================================================
 
-! TODO: name count_lines() for consistency with read_line()
-function countln(filename) result(nline)
+function count_lines(filename) result(nline)
 	character(len=*), intent(in) :: filename
 	integer :: nline
 	!********
@@ -222,7 +221,7 @@ function countln(filename) result(nline)
 		nline = nline + 1
 	end do
 
-end function countln
+end function count_lines
 
 !===============================================================================
 
@@ -234,7 +233,7 @@ function read_mat_char(filename, iostat) result(mat)
 	integer :: nx, ny, iu, x, y
 	character(len=:), allocatable :: line
 
-	ny = countln(filename)
+	ny = count_lines(filename)
 	open(newunit = iu, file = filename, action = "read")
 	line = read_line(iu)
 	nx = len(line)
@@ -316,12 +315,8 @@ function split(str, delims) result(strs)
 
 	character(len = *), intent(in) :: str
 	character(len = *), intent(in) :: delims
-
-	!character(len = :), allocatable :: strs
 	type(str_vec_t) :: strs
-
 	!********
-
 	integer :: i, i0, n
 
 	strs = new_str_vec()
@@ -339,7 +334,6 @@ function split(str, delims) result(strs)
 		if (i < i0) i = n + 1
 
 		if (i0 < i) call strs%push(str(i0: i - 1))
-
 	end do
 
 end function split
@@ -444,23 +438,26 @@ end subroutine print_mat_i32
 
 !===============================================================================
 
-subroutine print_mat_i64(msg, a)
+subroutine print_mat_i64(msg, a, iwidth)
 	! Pretty-print a matrix
 	!
 	! Note that this is transposed compared to Fortran's internal memory layout
 	!
-	! TODO: optional output file unit arg
+	! TODO: optional int width arg, optional output file unit arg
 	character(len = *), intent(in) :: msg
 	integer(kind=8), intent(in) :: a(:,:)
+	integer, optional, intent(in) :: iwidth
 	!********
-	integer :: i, j, m, n
+	integer :: i, j, m, n, iwidth_
 	integer, parameter :: unit_ = output_unit
+	iwidth_ = 6
+	if (present(iwidth)) iwidth_ = iwidth
 	m = size(a,1)
 	n = size(a,2)
 	write(unit_, "(a)") " " // msg
 	do i = 1, m
 		do j = 1, n
-			write(*, "(i6)", advance = "no") a(i,j)
+			write(*, "(i"//to_str(iwidth_)//")", advance = "no") a(i,j)
 		end do
 		write(unit_, *)
 	end do
@@ -539,6 +536,33 @@ logical function is_str_eq(a, b)
 		len(a) == len(b) .and. &
 		    a  ==     b
 end function is_str_eq
+
+!===============================================================================
+
+function read_i32(str) result(a)
+	character(len=*), intent(in) :: str
+	integer(kind=4) :: a
+	read(str, *) a
+end function read_i32
+
+!===============================================================================
+
+function read_i32_delims(str, delims) result(v)
+	character(len=*), intent(in) :: str, delims
+	integer, allocatable :: v(:)
+	!********
+	integer(kind=8) :: i, n
+	type(str_vec_t) :: strs
+
+	strs = split(str, delims)
+	n = strs%len
+	allocate(v(n))
+	do i = 1, n
+		!read(strs%vec(i)%str, *) v(i)
+		v(i) = read_i32(strs%vec(i)%str)
+	end do
+
+end function read_i32_delims
 
 !===============================================================================
 

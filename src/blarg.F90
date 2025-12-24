@@ -100,6 +100,11 @@ module blarg_m
 		procedure :: range_i32_step
 		procedure :: range_i32_stop
 	end interface range_i32
+	interface range_i64
+		procedure :: range_i64_start_stop
+		procedure :: range_i64_step
+		procedure :: range_i64_stop
+	end interface range_i64
 
 contains
 
@@ -645,6 +650,45 @@ function range_i32_stop(stop_) result(range_)
 	integer, parameter :: start_ = 1, step_ = 1
 	range_ = range_i32_step(start_, stop_, step_)
 end function range_i32_stop
+
+!> Return evenly spaced integers over a specified interval
+!>
+!> Following the Fortran convention, the stop_ bound is inclusive.  Compare the
+!> similar functions linspace in MATLAB and arange in numpy
+function range_i64_step(start_, stop_, step_) result(range_)
+	! I settled on the `range` name just because it's shorter than `linspace`
+	integer(kind=8), intent(in) :: start_, stop_, step_
+	integer(kind=8), allocatable :: range_(:)
+	!********
+	integer(kind=8) :: i
+	range_ = [(i, i = start_, stop_, step_)]
+end function range_i64_step
+
+!> Return evenly spaced integers over a specified interval
+!>
+!> Following the Fortran convention, the stop_ bound is inclusive.  Compare the
+!> similar functions linspace in MATLAB and arange in numpy
+function range_i64_start_stop(start_, stop_) result(range_)
+	! I settled on the `range` name just because it's shorter than `linspace`
+	integer(kind=8), intent(in) :: start_, stop_
+	integer(kind=8), allocatable :: range_(:)
+	!********
+	integer(kind=8), parameter :: step_ = 1
+	range_ = range_i64_step(start_, stop_, step_)
+end function range_i64_start_stop
+
+!> Return evenly spaced integers over a specified interval
+!>
+!> Following the Fortran convention, the stop_ bound is inclusive.  Compare the
+!> similar functions linspace in MATLAB and arange in numpy
+function range_i64_stop(stop_) result(range_)
+	! I settled on the `range` name just because it's shorter than `linspace`
+	integer(kind=8), intent(in) :: stop_
+	integer(kind=8), allocatable :: range_(:)
+	!********
+	integer(kind=8), parameter :: start_ = 1, step_ = 1
+	range_ = range_i64_step(start_, stop_, step_)
+end function range_i64_stop
 
 !********
 

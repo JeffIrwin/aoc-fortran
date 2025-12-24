@@ -437,7 +437,7 @@ end subroutine print_mat_i32
 
 !===============================================================================
 
-subroutine print_mat_i64(msg, a, iwidth)
+subroutine print_mat_i64(msg, a, width)
 	! Pretty-print a matrix
 	!
 	! Note that this is transposed compared to Fortran's internal memory layout
@@ -445,18 +445,22 @@ subroutine print_mat_i64(msg, a, iwidth)
 	! TODO: optional int width arg, optional output file unit arg
 	character(len = *), intent(in) :: msg
 	integer(kind=8), intent(in) :: a(:,:)
-	integer, optional, intent(in) :: iwidth
+	integer, optional, intent(in) :: width
 	!********
-	integer :: i, j, m, n, iwidth_
+	integer :: i, j, m, n, width_
 	integer, parameter :: unit_ = output_unit
-	iwidth_ = 6
-	if (present(iwidth)) iwidth_ = iwidth
+
+	! This could make two passes over the array to get the max width required,
+	! or even max width per-column
+	width_ = 6
+	if (present(width)) width_ = width
+
 	m = size(a,1)
 	n = size(a,2)
 	write(unit_, "(a)") " " // msg
 	do i = 1, m
 		do j = 1, n
-			write(*, "(i"//to_str(iwidth_)//")", advance = "no") a(i,j)
+			write(*, "(i"//to_str(width_)//")", advance = "no") a(i,j)
 		end do
 		write(unit_, *)
 	end do

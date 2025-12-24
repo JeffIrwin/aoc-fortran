@@ -9,6 +9,7 @@ Advent of code in Fortran (again)
   * otherwise, overload things like print_mat_i32() and print_mat_f32() with a
     unified interface
 - More unit tests:
+  * sort fuzz tests
   * hash maps with random str keys/vals
   * i64 and str val hash maps
     + i32 done

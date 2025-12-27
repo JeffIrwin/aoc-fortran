@@ -19,10 +19,8 @@ function part1(args) result(ans_)
 	!********
 	character :: c
 	character(len = :), allocatable :: filename, str_
-	!character, allocatable :: cg(:,:), rl(:), rt(:)
-	integer :: i, iu, io, x, y!, nx, ny, nr, nd
+	integer :: i, iu, io, x, y
 	integer, allocatable :: ig(:,:)
-	!integer, allocatable :: rv(:), ds(:,:)
 	integer(kind=8) :: sum_
 	logical :: is_solvable
 
@@ -110,7 +108,6 @@ function part1(args) result(ans_)
 
 		else if (c == "!") then
 			rt(i) = c
-			!if (str_(4:) /= "!=") call panic("bad input -- unexpected region constraint type")
 			if (str_(4:) /= "!=") then
 				call panic('end-of-line junk found: "'//str_(4:)//'"')
 			end if
@@ -125,6 +122,8 @@ function part1(args) result(ans_)
 	print "(a,"//to_str(nr)//"a3)", " rl = ", rl
 	print "(a,"//to_str(nr)//"a3)", " rt = ", rt
 	print "(a,"//to_str(nr)//"i3)", " rv = ", rv
+
+	! Sanity check on total area
 
 	!print *, "2 * nd = ", 2 * nd
 	!print *, "nboard = ", count(cg /= ".")
@@ -144,18 +143,15 @@ function part1(args) result(ans_)
 	close(iu)
 	call print_mat_i32("ds (transpose) = ", ds)
 
-	!ig = zeros_i32(nx, ny)
 	ig = -ones_i32(nx, ny)  ! initialize -1
 	do y = 1, ny
 	do x = 1, nx
-		! Mark the outside locations "." with -2
-		if (cg(x,y) == ".") ig(x,y) = -2
+		if (cg(x,y) == ".") ig(x,y) = -2  ! mark the outside locations "." with -2
 	end do
 	end do
 	call print_mat_i32("ig (init) = ", transpose(ig))
 
 	is_solvable = search(ig, 1)
-
 	if (.not. is_solvable) then
 		call panic("puzzle is not solvable")
 	end if
@@ -168,19 +164,17 @@ end function part1
 !===============================================================================
 
 recursive logical function search(ig, id) result(ans)
-	!character, intent(in) :: cg(:,:)
+	! Pack the domino `id` into integer grid `ig`, return false if it violates
+	! geometric or numeric constraints
 	integer  , intent(inout) :: ig(:,:)
-	!integer  , intent(in) :: ds(:,:)
 	integer  , intent(in) :: id
 	!********
 	character :: c
 	integer :: i, x0, y0, t, ndx, ndy, x, y, ic
-	!integer :: nx, ny
-	integer :: sums(256), vals(32, 256), nvals(256)
-	!integer :: npack = 0  ! debug only
+	integer :: sums(256), vals(8, 256), nvals(256)
 	integer, allocatable :: d(:,:), igl(:,:)
 	logical :: can_pack = .true.
-	logical :: is_complete(256)!, is_eq(256), is_ne(256)
+	logical :: is_complete(256)
 
 	if (id > size(ds,2)) then
 		ans = .true.  ! base case: all dominoes have been packed
@@ -216,14 +210,12 @@ recursive logical function search(ig, id) result(ans)
 		! Check if the sums of each region satisfy the numeric constraints
 		sums = 0
 		is_complete = .true.
-		vals = -2
 		nvals = 0
 		do y = 1, ny
 		do x = 1, nx
 			c = cg(x,y)
 			if (c == "*") cycle  ! wildcard, free square
 			ic = ichar(c)
-			!if (igl(x,y) == -2) then
 			if (igl(x,y) < 0) then
 				is_complete(ic) = .false.
 				cycle
@@ -241,8 +233,6 @@ recursive logical function search(ig, id) result(ans)
 			!print *, rl(i), ": ", to_str(sums(ic))
 			!print *, "rt = ", rt(i)
 			!print *, "is_complete = ", is_complete(ic)
-
-			!if (.not. is_complete(ic)) cycle
 
 			select case (rt(i))
 			case (".")
@@ -262,7 +252,7 @@ recursive logical function search(ig, id) result(ans)
 			case ("<")
 				can_pack = sums(ic) < rv(i)
 			case ("=")
-				!can_pack = all(vals(2: nvals(ic), ic) == vals(1, ic))
+				!can_pack = all(vals(2: nvals(ic), ic) == vals(1, ic))  ! wrong for nval <= 1
 				can_pack = all_eq(vals(1: nvals(ic), ic))
 			case ("!")
 				can_pack = all_ne(vals(1: nvals(ic), ic))
@@ -278,13 +268,9 @@ recursive logical function search(ig, id) result(ans)
 			ans = .true.
 			return
 		end if
-
-		!npack = npack + 1
-		!print *, "."
 	end do
 	end do
 	end do
-	!print *, "npack = ", npack
 
 	! TODO: add `idg` arg to list which domino ID each final square came from or
 	! just pretty-print the answer somehow in a way that shows whether dominos

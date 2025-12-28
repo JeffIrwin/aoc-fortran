@@ -7,7 +7,7 @@ module aoc_m
 	! Global variables. TODO: package these immutable vars into a pips_t game
 	! struct
 	character, allocatable :: cg(:,:), rl(:), rt(:)
-	integer :: nx, ny, nr, nd
+	integer :: nx, ny, nr, nd, rmap(128)
 	integer, allocatable :: rv(:), ds(:,:)
 	integer, allocatable :: pts(:,:)
 
@@ -127,6 +127,12 @@ function part1(args) result(ans_)
 	print "(a,"//to_str(nr)//"a3)", " rt = ", rt
 	print "(a,"//to_str(nr)//"i3)", " rv = ", rv
 
+	rmap = -1
+	do i = 1, nr
+		rmap(ichar(rl(i))) = i
+	end do
+	!print *, "rmap = ", rmap
+
 	! Sanity check on total area
 
 	!print *, "2 * nd = ", 2 * nd
@@ -237,9 +243,9 @@ recursive logical function search(ig, id, has_horz, has_vert, navail, sln) resul
 	!********
 	character :: c
 	character, allocatable :: g(:,:)
-	integer :: i, x0, y0, t, ndx, ndy, x, y, ic, ip, max_avail
+	integer :: i, x0, y0, t, ndx, ndy, x, y, ic, ip, max_avail, r1, r2, ir
 	integer :: sums(128), vals(8, 128), nvals(128), sums_max(128)
-	integer, allocatable :: d(:,:), igl(:,:), navaill(:)
+	integer, allocatable :: d(:,:), igl(:,:), navaill(:), rs(:)
 	logical :: can_pack = .true.
 	logical :: is_complete(128)  ! keys are ascii so arrays are size 128
 	logical, allocatable :: has_horzl(:,:), has_vertl(:,:)
@@ -312,6 +318,16 @@ recursive logical function search(ig, id, has_horz, has_vert, navail, sln) resul
 		!! Almost always 6. Might not be worth it
 		!if (max_avail < 6) print *, "max_avail = ", max_avail
 
+		r1 = rmap(ichar(cg( x0, y0 )))
+		r2 = rmap(ichar(cg( x0+ndx-1, y0+ndy-1 )))
+		!print *, "r12 = ", r1, r2
+		if (r1 == r2) then
+			rs = [r1]
+		else
+			rs = [r1, r2]
+		end if
+		!print *, "rs = ", rs
+
 		! Check if the sums of each region satisfy the numeric constraints
 		sums = 0
 		sums_max = 0
@@ -335,9 +351,15 @@ recursive logical function search(ig, id, has_horz, has_vert, navail, sln) resul
 		end do
 		end do
 
+		! TODO: only check (and sum) the 1 or 2 region(s) that are touched by the domino that was just placed
 		can_pack = .true.
 		!print *, "sums = "
-		do i = 1, nr
+
+		!do i = 1, nr
+		do ir = 1, size(rs)
+			i = rs(ir)
+			if (i <= 0) cycle  ! wildcard
+
 			ic = ichar(rl(i))
 			!print *, rl(i), ": ", to_str(sums(ic))
 			!print *, "rt = ", rt(i)

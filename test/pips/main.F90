@@ -9,6 +9,8 @@ module aoc_m
 	integer :: nx, ny, nr, nd
 	integer, allocatable :: rv(:), ds(:,:)
 
+	integer, allocatable :: pts(:,:)
+
 contains
 
 !===============================================================================
@@ -20,7 +22,7 @@ function part1(args) result(ans_)
 	!********
 	character :: c
 	character(len = :), allocatable :: filename, str_
-	integer :: i, iu, io, x, y
+	integer :: i, iu, io, x, y, t, np
 	integer, allocatable :: ig(:,:)
 	integer(kind=8) :: sum_
 	logical :: is_solvable
@@ -148,8 +150,17 @@ function part1(args) result(ans_)
 	! Sort dominos by the sum of each tile. This optimization makes the search
 	! run >10x faster (from 1+ min on laptop battery for hard problem down to <2
 	! sec)
-	ds = ds(:, reverse(sort_index(sum(ds,1))))
+
+	! Reverse search makes sense and is faster for 2025-12-27's hard problem
+	!
+	! Somehow forward search is faster for 2025-12-26's hard problem
+	!
+	! Could take both sorts, plus some random shuffles, and solve all in
+	! parallel. Would need an atomic to print answer once and maybe caching
+
+	ds = ds(:, reverse(sort_index(sum(ds,1)))) ! TODO
 	!ds = ds(:, sort_index(sum(ds,1)))
+
 	call print_mat_i32("ds (transpose) = ", ds)
 
 	ig = -ones_i32(nx, ny)  ! initialize -1
@@ -161,6 +172,40 @@ function part1(args) result(ans_)
 	end do
 	end do
 	!call print_mat_i32("ig (init) = ", transpose(ig))
+
+	! A lot (2x?) of work is wasted re-scanning over geometrically unpackable
+	! positions. Make a pre-computed table before recursion of x, y, and t
+	! values where dominoes can be packed, if sorting isn't enough optimization
+	np = 0
+	allocate(pts(3, 4*count(cg /= ".")))
+	do y = 1, ny
+	do x = 1, nx
+	!do t = 1, 4
+		if (cg(x,y) == ".") cycle
+
+		c = "."
+		if (x < nx) c = cg(x+1, y)
+		if (c /= ".") then
+			np = np + 1
+			pts(:,np) = [x, y, 3]
+			np = np + 1
+			pts(:,np) = [x, y, 4]
+		end if
+
+		c = "."
+		if (y < ny) c = cg(x, y+1)
+		if (c /= ".") then
+			np = np + 1
+			pts(:,np) = [x, y, 1]
+			np = np + 1
+			pts(:,np) = [x, y, 2]
+		end if
+
+	!end do
+	end do
+	end do
+	pts = pts(:, 1: np)  ! trim
+	!print *, "pts = ", pts
 
 	write(*,*) "Searching for solution ..."
 	is_solvable = search(ig, 1, has_horz, has_vert)
@@ -186,8 +231,8 @@ recursive logical function search(ig, id, has_horz, has_vert) result(ans)
 	!********
 	character :: c
 	character, allocatable :: g(:,:)
-	integer :: i, x0, y0, t, ndx, ndy, x, y, ic
-	integer :: sums(128), vals(32, 128), nvals(128)
+	integer :: i, x0, y0, t, ndx, ndy, x, y, ic, ip
+	integer :: sums(128), vals(8, 128), nvals(128)
 	integer, allocatable :: d(:,:), igl(:,:)
 	logical :: can_pack = .true.
 	logical :: is_complete(128)  ! keys are ascii so arrays are size 128
@@ -219,24 +264,25 @@ recursive logical function search(ig, id, has_horz, has_vert) result(ans)
 
 	! Place the current domino `id` in every possible position and orientation
 	! (transformation)
-	!
-	! A lot (2x?) of work is wasted re-scanning over geometrically unpackable
-	! positions. Could make a pre-computed table before recursion of x, y, and t
-	! values where dominoes can be packed, if sorting isn't enough optimization
 	ans = .false.
-	do y0 = 1, ny
-	do x0 = 1, nx
-	do t = 1, 4
+	!do y0 = 1, ny
+	!do x0 = 1, nx
+	!do t = 1, 4
+	do ip = 1, size(pts,2)
+		x0 = pts(1,ip)  ! unpack
+		y0 = pts(2,ip)
+		t  = pts(3,ip)
+
 		d = trans_(ds(:,id), t)
 		ndx = size(d,1)
 		ndy = size(d,2)
 		!print *, "x0, y0, size(d) = ", x0, y0, ndx, ndy
 
-		! Check bounds
-		if (x0 + ndx > nx+1) cycle
-		if (y0 + ndy > ny+1) cycle
+		!! Check bounds (not necessary with `pts` table)
+		!if (x0 + ndx > nx+1) cycle
+		!if (y0 + ndy > ny+1) cycle
 
-		! Check domino position is unoccupied
+		! Check if domino position is unoccupied
 		can_pack = all(ig(x0: x0+ndx-1, y0: y0+ndy-1) == -1)
 		if (.not. can_pack) cycle
 
@@ -312,8 +358,8 @@ recursive logical function search(ig, id, has_horz, has_vert) result(ans)
 			return
 		end if
 	end do
-	end do
-	end do
+	!end do
+	!end do
 
 end function search
 

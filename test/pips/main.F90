@@ -22,8 +22,8 @@ function part1(args) result(ans_)
 	!********
 	character :: c
 	character(len = :), allocatable :: filename, str_
-	integer :: i, iu, io, x, y, t, np
-	integer, allocatable :: ig(:,:)
+	integer :: i, iu, io, x, y, np
+	integer, allocatable :: ig(:,:), navail(:)
 	integer(kind=8) :: sum_
 	logical :: is_solvable
 	logical, allocatable :: has_horz(:,:), has_vert(:,:)
@@ -208,8 +208,17 @@ function part1(args) result(ans_)
 	pts = pts(:, 1: np)  ! trim
 	!print *, "pts = ", pts
 
+	! Count the number of available squares of each pip count (0:6)
+	navail = zeros_i32(7)
+	do i = 1, nd
+		navail(ds(1,i)+1) = navail(ds(1,i)+1) + 1
+		navail(ds(2,i)+1) = navail(ds(2,i)+1) + 1
+	end do
+	print *, "navail = ", navail
+	!stop
+
 	write(*,*) "Searching for solution ..."
-	is_solvable = search(ig, 1, has_horz, has_vert)
+	is_solvable = search(ig, 1, has_horz, has_vert, navail)
 	if (.not. is_solvable) then
 		call panic("puzzle is not solvable")
 	end if
@@ -221,7 +230,7 @@ end function part1
 
 !===============================================================================
 
-recursive logical function search(ig, id, has_horz, has_vert) result(ans)
+recursive logical function search(ig, id, has_horz, has_vert, navail) result(ans)
 	! Pack the domino `id` into integer grid `ig`, return false if it violates
 	! geometric or numeric constraints
 
@@ -229,12 +238,13 @@ recursive logical function search(ig, id, has_horz, has_vert) result(ans)
 	integer  , intent(inout) :: ig(:,:)
 	integer  , intent(in) :: id
 	logical, intent(in) :: has_horz(:,:), has_vert(:,:)
+	integer, intent(in) :: navail(:)
 	!********
 	character :: c
 	character, allocatable :: g(:,:)
-	integer :: i, x0, y0, t, ndx, ndy, x, y, ic, ip
+	integer :: i, x0, y0, t, ndx, ndy, x, y, ic, ip, max_avail
 	integer :: sums(128), vals(8, 128), nvals(128), sums_max(128)
-	integer, allocatable :: d(:,:), igl(:,:)
+	integer, allocatable :: d(:,:), igl(:,:), navaill(:)
 	logical :: can_pack = .true.
 	logical :: is_complete(128)  ! keys are ascii so arrays are size 128
 	logical, allocatable :: has_horzl(:,:), has_vertl(:,:)
@@ -292,11 +302,22 @@ recursive logical function search(ig, id, has_horz, has_vert) result(ans)
 
 		has_horzl = has_horz
 		has_vertl = has_vert
+		navaill = navail
 		if (ndx > 1) then
 			has_horzl(x0,y0) = .true.
 		else
 			has_vertl(x0,y0) = .true.
 		end if
+
+		! Decrement the available count
+		navaill(ds(1,id)+1) = navaill(ds(1,id)+1) - 1
+		navaill(ds(2,id)+1) = navaill(ds(2,id)+1) - 1
+		max_avail = 0
+		do i = 0, 6
+			if (navaill(i+1) > 0) max_avail = i
+		end do
+		!print *, "navaill = ", navaill
+		!print *, "max_avail = ", max_avail
 
 		! Check if the sums of each region satisfy the numeric constraints
 		sums = 0
@@ -309,7 +330,8 @@ recursive logical function search(ig, id, has_horz, has_vert) result(ans)
 			if (c == "*") cycle  ! wildcard, free square
 			ic = ichar(c)
 			if (igl(x,y) < 0) then
-				sums_max(ic) = sums_max(ic) + 6  ! max possible sum if all remaining squares are 6
+				!sums_max(ic) = sums_max(ic) + 6  ! max possible sum if all remaining squares are 6
+				sums_max(ic) = sums_max(ic) + max_avail
 				is_complete(ic) = .false.
 				cycle
 			end if
@@ -333,12 +355,6 @@ recursive logical function search(ig, id, has_horz, has_vert) result(ans)
 				if (is_complete(ic)) then
 					can_pack = sums(ic) == rv(i)
 				else
-					! Could be even more optimal in a few cases by analyzing
-					! sums and max vals of unused dominoes. There isn't an
-					! infinite supply of 6's. We could have a sorted vector of
-					! individual squares plus a bool array, mark them while they
-					! are used up, and then increment sums_max by the max
-					! available instead of always by 6
 					can_pack = sums(ic) <= rv(i) .and. sums_max(ic) >= rv(i)
 				end if
 			case (">")
@@ -361,7 +377,7 @@ recursive logical function search(ig, id, has_horz, has_vert) result(ans)
 		if (.not. can_pack) cycle
 		!call print_mat_i32("igl (wip) = ", transpose(igl))
 
-		if (search(igl, id+1, has_horzl, has_vertl)) then
+		if (search(igl, id+1, has_horzl, has_vertl, navaill)) then
 			ans = .true.
 			return
 		end if

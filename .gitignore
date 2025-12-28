@@ -4,6 +4,7 @@ test-input.txt
 test-input2.txt
 
 build/
+scratch/
 *.a
 *.o
 main

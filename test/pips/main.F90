@@ -7,9 +7,8 @@ module aoc_m
 	! Global variables. TODO: package these immutable vars into a pips_t game
 	! struct
 	character, allocatable :: cg(:,:), rl(:), rt(:)
-	integer :: nx, ny, nr, nd, rmap(128)
+	integer :: nx, ny, nr, nd
 	integer, allocatable :: rv(:)
-	integer :: rx(2, 32, 128), nrx(128)
 
 	logical :: has_sln  ! shared mutable thread control. dangerous!
 
@@ -24,7 +23,7 @@ function part1(args) result(ans_)
 	!********
 	character :: c
 	character(len = :), allocatable :: filename, str_, ans1, ans2
-	integer :: i, iu, io, x, y, ic
+	integer :: i, iu, io, x, y
 	integer, allocatable :: ig(:,:), idx1(:), idx2(:)
 	integer, allocatable :: ds(:,:), ds1(:,:), ds2(:,:)
 	integer(kind=8) :: sum_
@@ -130,16 +129,14 @@ function part1(args) result(ans_)
 	print "(a,"//to_str(nr)//"a3)", " rt = ", rt
 	print "(a,"//to_str(nr)//"i3)", " rv = ", rv
 
-	rmap = -1
-	do i = 1, nr
-		rmap(ichar(rl(i))) = i
-	end do
-	!print *, "rmap = ", rmap
+	! TODO: more input sanity checks:
+	! - no region rules for "*" or ".", maybe even alphabetic only?
+	! - no pip counts <0 or >6
+	! - square input board, padding required
+	! - split on delims to allow extra whitespace
+	! - allow comments?
 
 	! Sanity check on total area
-
-	!print *, "2 * nd = ", 2 * nd
-	!print *, "nboard = ", count(cg /= ".")
 	if (2 * nd < count(cg /= ".")) then
 		call panic("too few dominoes to cover board")
 	else if (2 * nd > count(cg /= ".")) then
@@ -185,22 +182,6 @@ function part1(args) result(ans_)
 	end do
 	end do
 	!call print_mat_i32("ig (init) = ", transpose(ig))
-
-	! Make a list of the coordinates that make up each region
-	nrx = 0
-	rx = 0
-	do y = 1, ny
-	do x = 1, nx
-		if (cg(x,y) == ".") cycle
-		if (cg(x,y) == "*") cycle
-		ic = ichar(cg(x,y))
-		nrx(ic) = nrx(ic) + 1
-		rx(:, nrx(ic), ic) = [x, y]
-	end do
-	end do
-	!print *, "rx = "
-	!print "(16i4)", rx
-	!!stop
 
 	write(*,*) "Searching for solution ..."
 	has_sln = .false.
@@ -248,10 +229,9 @@ recursive logical function search(ds, ig, id, has_horz, has_vert, sln) result(an
 	!********
 	character :: c
 	character, allocatable :: g(:,:)
-	integer :: i, x0, y0, t, ndx, ndy, x, y, ic, &
-		r1, r2, ir, rc1, rc2, ix
+	integer :: i, x0, y0, t, ndx, ndy, x, y, ic
 	integer :: sums(128), vals(32, 128), nvals(128), sums_max(128)
-	integer, allocatable :: d(:,:), igl(:,:), rs(:), rcs(:)
+	integer, allocatable :: d(:,:), igl(:,:)
 	logical :: can_pack = .true.
 	logical :: is_complete(128)  ! keys are ascii so arrays are size 128
 	logical, allocatable :: has_horzl(:,:), has_vertl(:,:)
@@ -318,35 +298,13 @@ recursive logical function search(ds, ig, id, has_horz, has_vert, sln) result(an
 			has_vertl(x0,y0) = .true.
 		end if
 
-		rc1 = ichar(cg( x0, y0 ))
-		rc2 = ichar(cg( x0+ndx-1, y0+ndy-1 ))
-		r1 = rmap(ichar(cg( x0, y0 )))
-		r2 = rmap(ichar(cg( x0+ndx-1, y0+ndy-1 )))
-		!print *, "r12 = ", r1, r2
-		if (r1 == r2) then
-			rs = [r1]
-			rcs = [rc1]
-		else
-			rs = [r1, r2]
-			rcs = [rc1, rc2]
-		end if
-		!print *, "rs = ", rs
-
 		! Check if the sums of each region satisfy the numeric constraints
-		!
-		! TODO: a lot of the optimizations, like `nrx`,
-		! did not help significantly.  Revert those to simplify and benchmark.
-		! Only sorting, threading, and sums_max += 6 help significantly
 		sums = 0
 		sums_max = 0
 		is_complete = .true.
 		nvals = 0
-		do ir = 1, size(rs)
-		do ix = 1, nrx(rcs(ir))
-
-			x = rx(1, ix, rcs(ir))
-			y = rx(2, ix, rcs(ir))
-
+		do y = 1, ny
+		do x = 1, nx
 			c = cg(x,y)
 			if (c == "*") cycle  ! wildcard, free square
 			ic = ichar(c)
@@ -365,10 +323,7 @@ recursive logical function search(ds, ig, id, has_horz, has_vert, sln) result(an
 
 		can_pack = .true.
 		!print *, "sums = "
-		do ir = 1, size(rs)
-			i = rs(ir)
-			if (i <= 0) cycle  ! wildcard
-
+		do i = 1, nr
 			ic = ichar(rl(i))
 			!print *, rl(i), ": ", to_str(sums(ic))
 			!print *, "rt = ", rt(i)

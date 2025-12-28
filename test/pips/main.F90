@@ -14,6 +14,8 @@ module aoc_m
 	integer :: rx(2, 32, 128), nrx(128)
 	!integer :: rx(2, 8, 128), nrx(128)
 
+	logical :: has_sln  ! shared mutable thread control. dangerous!
+
 contains
 
 !===============================================================================
@@ -24,13 +26,15 @@ function part1(args) result(ans_)
 	character(len = :), allocatable :: ans_
 	!********
 	character :: c
-	character(len = :), allocatable :: filename, str_
+	character(len = :), allocatable :: filename, str_, ans1, ans2
 	integer :: i, iu, io, x, y, np, ic
-	integer, allocatable :: ig(:,:), navail(:), idx1(:), idx2(:)
+	integer, allocatable :: ig(:,:), navail(:), idx1(:), idx2(:), &
+		ig1(:,:), ig2(:,:), navail1(:), navail2(:)
 	integer, allocatable :: ds(:,:), ds1(:,:), ds2(:,:)
 	integer(kind=8) :: sum_
-	logical :: is_solvable
-	logical, allocatable :: has_horz(:,:), has_vert(:,:)
+	logical :: is_solvable1, is_solvable2
+	logical, allocatable :: has_horz(:,:), has_vert(:,:), &
+		has_horz1(:,:), has_horz2(:,:), has_vert1(:,:), has_vert2(:,:)
 
 	sum_ = 0
 
@@ -245,36 +249,45 @@ function part1(args) result(ans_)
 	!!stop
 
 	write(*,*) "Searching for solution ..."
+	has_sln = .false.
 
 !$omp parallel default(shared) private(ans_)
 !$omp sections
 
-!$omp section
-!!$omp single nowait
-!!$omp task
-
 	! TODO: do we need has_horz1 copy (and has_vert, navail) for each thread
 	! section?
 
-	is_solvable = search(ds1, ig, 1, has_horz, has_vert, navail, ans_)
-	print *, "ans_ = ", ans_
-	print *, "task 1 done"
-!!$omp end task
-!!$omp end single
+!$omp section
+	ig1 = ig
+	has_horz1 = has_horz
+	has_vert1 = has_vert
+	navail1 = navail
+	is_solvable1 = search(ds1, ig1, 1, has_horz1, has_vert1, navail1, ans1)
+!$omp critical
+	has_sln = has_sln .or. is_solvable1
+	!print *, "ans1 = ", ans1
+	print *, "section 1 done"
+!$omp end critical
 
 !$omp section
-!!$omp single nowait
-!!$omp task
-	is_solvable = search(ds2, ig, 1, has_horz, has_vert, navail, ans_)
-	print *, "ans_ = ", ans_
-	print *, "task 2 done"
-!!$omp end task
-!!$omp end single
+	ig2 = ig
+	has_horz2 = has_horz
+	has_vert2 = has_vert
+	navail2 = navail
+	is_solvable2 = search(ds2, ig2, 1, has_horz2, has_vert2, navail2, ans2)
+!$omp critical
+	has_sln = has_sln .or. is_solvable2
+	!print *, "ans2 = ", ans2
+	print *, "section 2 done"
+!$omp end critical
 
-!$omp end sections
+!$omp end sections nowait
 !$omp end parallel
 
-	if (.not. is_solvable) then
+	if (is_solvable1) ans_ = ans1
+	if (is_solvable2) ans_ = ans2
+
+	if (.not. (is_solvable1 .or. is_solvable2)) then
 		call panic("puzzle is not solvable")
 	end if
 
@@ -305,15 +318,18 @@ recursive logical function search(ds, ig, id, has_horz, has_vert, navail, sln) r
 	logical :: is_complete(128)  ! keys are ascii so arrays are size 128
 	logical, allocatable :: has_horzl(:,:), has_vertl(:,:)
 
+	if (has_sln) then
+		sln = ""
+		ans = .false.
+		return
+	end if
+
 	if (id > size(ds,2)) then
+!$omp critical
 		ans = .true.  ! base case: all dominoes have been packed
 
 		! Could also add an `idg` arg to show the domino ID that each solution
 		! square came from
-
-		!call print_mat_i32("ig (ans) = ", transpose(ig))
-		!call print_mat_bool("has_horz = ", transpose(has_horz))
-		!call print_mat_bool("has_vert = ", transpose(has_vert))
 
 		! Double size to also print horizontal/vertical domino connections
 		allocate(g(2*nx, 2*ny))
@@ -330,6 +346,7 @@ recursive logical function search(ds, ig, id, has_horz, has_vert, navail, sln) r
 		call print_mat_char("answer = ", g)
 		sln = mat_char_to_str(g, ":")
 		print *, "sln = ", sln
+!$omp end critical
 		return
 	end if
 
@@ -399,7 +416,6 @@ recursive logical function search(ds, ig, id, has_horz, has_vert, navail, sln) r
 		!do y = 1, ny
 		!do x = 1, nx
 
-			!rx(:, nrx(ic), ic) = [x, y]
 			x = rx(1, ix, rcs(ir))
 			y = rx(2, ix, rcs(ir))
 

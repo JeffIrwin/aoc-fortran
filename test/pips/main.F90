@@ -181,7 +181,6 @@ function part1(args) result(ans_)
 	allocate(pts(3, 4*count(cg /= ".")))
 	do y = 1, ny
 	do x = 1, nx
-	!do t = 1, 4
 		if (cg(x,y) == ".") cycle
 
 		c = "."
@@ -201,8 +200,6 @@ function part1(args) result(ans_)
 			np = np + 1
 			pts(:,np) = [x, y, 2]
 		end if
-
-	!end do
 	end do
 	end do
 	pts = pts(:, 1: np)  ! trim
@@ -214,17 +211,14 @@ function part1(args) result(ans_)
 		navail(ds(1,i)+1) = navail(ds(1,i)+1) + 1
 		navail(ds(2,i)+1) = navail(ds(2,i)+1) + 1
 	end do
-	print *, "navail = ", navail
-	!stop
+	!print *, "navail = ", navail
 
 	write(*,*) "Searching for solution ..."
 	is_solvable = search(ig, 1, has_horz, has_vert, navail)
 	if (.not. is_solvable) then
 		call panic("puzzle is not solvable")
 	end if
-
-	!write(*,*) "part 1 = ", to_str(sum_)
-	ans_ = to_str(sum_)
+	ans_ = to_str(sum_)  ! TODO: cleanup some of this vestigial AOC stuff
 
 end function part1
 
@@ -254,7 +248,8 @@ recursive logical function search(ig, id, has_horz, has_vert, navail) result(ans
 
 		! Could also add an `idg` arg to show the domino ID that each solution
 		! square came from
-		call print_mat_i32("ig (ans) = ", transpose(ig))
+
+		!call print_mat_i32("ig (ans) = ", transpose(ig))
 		!call print_mat_bool("has_horz = ", transpose(has_horz))
 		!call print_mat_bool("has_vert = ", transpose(has_vert))
 
@@ -276,9 +271,6 @@ recursive logical function search(ig, id, has_horz, has_vert, navail) result(ans
 	! Place the current domino `id` in every possible position and orientation
 	! (transformation)
 	ans = .false.
-	!do y0 = 1, ny
-	!do x0 = 1, nx
-	!do t = 1, 4
 	do ip = 1, size(pts,2)
 		x0 = pts(1,ip)  ! unpack
 		y0 = pts(2,ip)
@@ -289,12 +281,8 @@ recursive logical function search(ig, id, has_horz, has_vert, navail) result(ans
 		ndy = size(d,2)
 		!print *, "x0, y0, size(d) = ", x0, y0, ndx, ndy
 
-		!! Check bounds (not necessary with `pts` table)
-		!if (x0 + ndx > nx+1) cycle
-		!if (y0 + ndy > ny+1) cycle
-
 		! Check if domino position is unoccupied
-		can_pack = all(ig(x0: x0+ndx-1, y0: y0+ndy-1) == -1)
+		can_pack = all(ig(x0: x0+ndx-1, y0: y0+ndy-1) == -1) ! TODO: magic numbers/chars
 		if (.not. can_pack) cycle
 
 		igl = ig  ! local copy
@@ -316,8 +304,9 @@ recursive logical function search(ig, id, has_horz, has_vert, navail) result(ans
 		do i = 0, 6
 			if (navaill(i+1) > 0) max_avail = i
 		end do
-		!print *, "navaill = ", navaill
-		!print *, "max_avail = ", max_avail
+
+		!! Almost always 6. Might not be worth it
+		!if (max_avail < 6) print *, "max_avail = ", max_avail
 
 		! Check if the sums of each region satisfy the numeric constraints
 		sums = 0
@@ -382,8 +371,6 @@ recursive logical function search(ig, id, has_horz, has_vert, navail) result(ans
 			return
 		end if
 	end do
-	!end do
-	!end do
 
 end function search
 

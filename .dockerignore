@@ -1,7 +1,13 @@
 
+Dockerfile
+.dockerignore
+
 **/input.txt
 **/test-input.txt
 **/test-input2.txt
+
+!/test/pips/input.txt
+!/test/pips/test-input.txt
 
 **/build/
 **/*.a

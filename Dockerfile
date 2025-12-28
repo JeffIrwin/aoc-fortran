@@ -72,3 +72,10 @@ RUN ./main --assert -1 -t
 RUN ./main -2 -i test-input2.txt #--assert
 RUN ./main --assert
 
+#****************
+# Run NYT pips test. This doesn't inherently belong in this repo except I have a
+# nice library and infrastructure for running puzzle solving programs in Fortran
+WORKDIR /workdir/aoc-fortran/test/pips
+
+RUN ./test-all.sh
+

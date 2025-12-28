@@ -143,6 +143,12 @@ function part1(args) result(ans_)
 	close(iu)
 	call print_mat_i32("ds (transpose) = ", ds)
 
+	! Sort dominos by the sum of each tile. This optimization makes the search
+	! run >10x faster (from 1+ min on laptop battery for hard problem down to <2
+	! sec)
+	ds = ds(:, reverse(sort_index(sum(ds,1))))
+	call print_mat_i32("ds (transpose) = ", ds)
+
 	ig = -ones_i32(nx, ny)  ! initialize -1
 	do y = 1, ny
 	do x = 1, nx
@@ -171,14 +177,19 @@ recursive logical function search(ig, id) result(ans)
 	!********
 	character :: c
 	integer :: i, x0, y0, t, ndx, ndy, x, y, ic
-	integer :: sums(256), vals(8, 256), nvals(256)
+	integer :: sums(128), vals(32, 128), nvals(128)
 	integer, allocatable :: d(:,:), igl(:,:)
 	logical :: can_pack = .true.
-	logical :: is_complete(256)
+	logical :: is_complete(128)  ! keys are ascii so arrays are size 128
 
 	if (id > size(ds,2)) then
 		ans = .true.  ! base case: all dominoes have been packed
+
+		! TODO: add `idg` arg to list which domino ID each final square came from or
+		! just pretty-print the answer somehow in a way that shows whether dominos
+		! are oriented vertically or horizontally
 		call print_mat_i32("ig (ans) = ", transpose(ig))
+
 		return
 	end if
 
@@ -188,6 +199,11 @@ recursive logical function search(ig, id) result(ans)
 
 	! Place the current domino `id` in every possible position and orientation
 	! (transformation)
+	!
+	! TODO: a lot (2x?) of work is wasted re-scanning over geometrically
+	! unpackable positions. Make a pre-computed table before recursion of x, y,
+	! and t values where dominoes can be packed, if sorting isn't enough
+	! optimization
 	do y0 = 1, ny
 	do x0 = 1, nx
 	do t = 1, 4
@@ -252,7 +268,6 @@ recursive logical function search(ig, id) result(ans)
 			case ("<")
 				can_pack = sums(ic) < rv(i)
 			case ("=")
-				!can_pack = all(vals(2: nvals(ic), ic) == vals(1, ic))  ! wrong for nval <= 1
 				can_pack = all_eq(vals(1: nvals(ic), ic))
 			case ("!")
 				can_pack = all_ne(vals(1: nvals(ic), ic))
@@ -272,9 +287,6 @@ recursive logical function search(ig, id) result(ans)
 	end do
 	end do
 
-	! TODO: add `idg` arg to list which domino ID each final square came from or
-	! just pretty-print the answer somehow in a way that shows whether dominos
-	! are oriented vertically or horizontally
 end function search
 
 !===============================================================================

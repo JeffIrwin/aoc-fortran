@@ -149,18 +149,20 @@ function part1(args) result(ans_)
 	! run >10x faster (from 1+ min on laptop battery for hard problem down to <2
 	! sec)
 	ds = ds(:, reverse(sort_index(sum(ds,1))))
+	!ds = ds(:, sort_index(sum(ds,1)))
 	call print_mat_i32("ds (transpose) = ", ds)
 
 	ig = -ones_i32(nx, ny)  ! initialize -1
+	has_horz = falses(nx,ny)
+	has_vert = falses(nx,ny)
 	do y = 1, ny
 	do x = 1, nx
 		if (cg(x,y) == ".") ig(x,y) = -2  ! mark the outside locations "." with -2
 	end do
 	end do
-	call print_mat_i32("ig (init) = ", transpose(ig))
+	!call print_mat_i32("ig (init) = ", transpose(ig))
 
-	has_horz = falses(nx,ny)
-	has_vert = falses(nx,ny)
+	write(*,*) "Searching for solution ..."
 	is_solvable = search(ig, 1, has_horz, has_vert)
 	if (.not. is_solvable) then
 		call panic("puzzle is not solvable")
@@ -194,12 +196,11 @@ recursive logical function search(ig, id, has_horz, has_vert) result(ans)
 	if (id > size(ds,2)) then
 		ans = .true.  ! base case: all dominoes have been packed
 
-		! TODO: add `idg` arg to list which domino ID each final square came from or
-		! just pretty-print the answer somehow in a way that shows whether dominos
-		! are oriented vertically or horizontally
+		! Could also add an `idg` arg to show the domino ID that each solution
+		! square came from
 		call print_mat_i32("ig (ans) = ", transpose(ig))
-		call print_mat_bool("has_horz = ", transpose(has_horz))
-		call print_mat_bool("has_vert = ", transpose(has_vert))
+		!call print_mat_bool("has_horz = ", transpose(has_horz))
+		!call print_mat_bool("has_vert = ", transpose(has_vert))
 
 		! Double size to also print horizontal/vertical domino connections
 		allocate(g(2*nx, 2*ny))
@@ -213,21 +214,16 @@ recursive logical function search(ig, id, has_horz, has_vert) result(ans)
 		end do
 
 		call print_mat_char("answer = ", g)
-
 		return
 	end if
-
-	ans = .false.
-	nx = size(cg, 1)
-	ny = size(cg, 2)
 
 	! Place the current domino `id` in every possible position and orientation
 	! (transformation)
 	!
-	! TODO: a lot (2x?) of work is wasted re-scanning over geometrically
-	! unpackable positions. Make a pre-computed table before recursion of x, y,
-	! and t values where dominoes can be packed, if sorting isn't enough
-	! optimization
+	! A lot (2x?) of work is wasted re-scanning over geometrically unpackable
+	! positions. Could make a pre-computed table before recursion of x, y, and t
+	! values where dominoes can be packed, if sorting isn't enough optimization
+	ans = .false.
 	do y0 = 1, ny
 	do x0 = 1, nx
 	do t = 1, 4

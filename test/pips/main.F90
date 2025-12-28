@@ -9,10 +9,8 @@ module aoc_m
 	character, allocatable :: cg(:,:), rl(:), rt(:)
 	integer :: nx, ny, nr, nd, rmap(128)
 	integer, allocatable :: rv(:)
-	!integer, allocatable :: ds(:,:)
 	integer, allocatable :: pts(:,:)
 	integer :: rx(2, 32, 128), nrx(128)
-	!integer :: rx(2, 8, 128), nrx(128)
 
 	logical :: has_sln  ! shared mutable thread control. dangerous!
 
@@ -28,13 +26,11 @@ function part1(args) result(ans_)
 	character :: c
 	character(len = :), allocatable :: filename, str_, ans1, ans2
 	integer :: i, iu, io, x, y, np, ic
-	integer, allocatable :: ig(:,:), navail(:), idx1(:), idx2(:), &
-		ig1(:,:), ig2(:,:), navail1(:), navail2(:)
+	integer, allocatable :: ig(:,:), navail(:), idx1(:), idx2(:)
 	integer, allocatable :: ds(:,:), ds1(:,:), ds2(:,:)
 	integer(kind=8) :: sum_
 	logical :: is_solvable1, is_solvable2
-	logical, allocatable :: has_horz(:,:), has_vert(:,:), &
-		has_horz1(:,:), has_horz2(:,:), has_vert1(:,:), has_vert2(:,:)
+	logical, allocatable :: has_horz(:,:), has_vert(:,:)
 
 	sum_ = 0
 
@@ -254,32 +250,17 @@ function part1(args) result(ans_)
 !$omp parallel default(shared) private(ans_)
 !$omp sections
 
-	! TODO: do we need has_horz1 copy (and has_vert, navail) for each thread
-	! section?
-
 !$omp section
-	ig1 = ig
-	has_horz1 = has_horz
-	has_vert1 = has_vert
-	navail1 = navail
-	is_solvable1 = search(ds1, ig1, 1, has_horz1, has_vert1, navail1, ans1)
-!$omp critical
-	has_sln = has_sln .or. is_solvable1
+	is_solvable1 = search(ds1, ig, 1, has_horz, has_vert, navail, ans1)
+	has_sln = has_sln .or. is_solvable1  ! careful re race conditions!
 	!print *, "ans1 = ", ans1
-	print *, "section 1 done"
-!$omp end critical
+	!print *, "section 1 done"
 
 !$omp section
-	ig2 = ig
-	has_horz2 = has_horz
-	has_vert2 = has_vert
-	navail2 = navail
-	is_solvable2 = search(ds2, ig2, 1, has_horz2, has_vert2, navail2, ans2)
-!$omp critical
+	is_solvable2 = search(ds2, ig, 1, has_horz, has_vert, navail, ans2)
 	has_sln = has_sln .or. is_solvable2
 	!print *, "ans2 = ", ans2
-	print *, "section 2 done"
-!$omp end critical
+	!print *, "section 2 done"
 
 !$omp end sections nowait
 !$omp end parallel
@@ -406,15 +387,15 @@ recursive logical function search(ds, ig, id, has_horz, has_vert, navail, sln) r
 
 		! Check if the sums of each region satisfy the numeric constraints
 		!
-		! TODO: only sum the 1 or 2 region(s) that are touched by the domino that was just placed
+		! TODO: a lot of the optimizations, like `nrx`, `pts`, and `max_avail`,
+		! did not help significantly.  Revert those to simplify and benchmark.
+		! Only sorting, threading, and sums_max += 6 help significantly
 		sums = 0
 		sums_max = 0
 		is_complete = .true.
 		nvals = 0
 		do ir = 1, size(rs)
 		do ix = 1, nrx(rcs(ir))
-		!do y = 1, ny
-		!do x = 1, nx
 
 			x = rx(1, ix, rcs(ir))
 			y = rx(2, ix, rcs(ir))

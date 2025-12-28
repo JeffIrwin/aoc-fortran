@@ -26,7 +26,7 @@ function part1(args) result(ans_)
 	character :: c
 	character(len = :), allocatable :: filename, str_, ans1, ans2
 	integer :: i, iu, io, x, y, np, ic
-	integer, allocatable :: ig(:,:), navail(:), idx1(:), idx2(:)
+	integer, allocatable :: ig(:,:), idx1(:), idx2(:)
 	integer, allocatable :: ds(:,:), ds1(:,:), ds2(:,:)
 	integer(kind=8) :: sum_
 	logical :: is_solvable1, is_solvable2
@@ -218,14 +218,6 @@ function part1(args) result(ans_)
 	pts = pts(:, 1: np)  ! trim
 	!print *, "pts = ", pts
 
-	! Count the number of available squares of each pip count (0:6)
-	navail = zeros_i32(7)
-	do i = 1, nd
-		navail(ds(1,i)+1) = navail(ds(1,i)+1) + 1
-		navail(ds(2,i)+1) = navail(ds(2,i)+1) + 1
-	end do
-	!print *, "navail = ", navail
-
 	! Make a list of the coordinates that make up each region
 	nrx = 0
 	rx = 0
@@ -249,13 +241,13 @@ function part1(args) result(ans_)
 !$omp sections
 
 !$omp section
-	is_solvable1 = search(ds1, ig, 1, has_horz, has_vert, navail, ans1)
+	is_solvable1 = search(ds1, ig, 1, has_horz, has_vert, ans1)
 	has_sln = has_sln .or. is_solvable1  ! careful re race conditions!
 	!print *, "ans1 = ", ans1
 	!print *, "section 1 done"
 
 !$omp section
-	is_solvable2 = search(ds2, ig, 1, has_horz, has_vert, navail, ans2)
+	is_solvable2 = search(ds2, ig, 1, has_horz, has_vert, ans2)
 	has_sln = has_sln .or. is_solvable2
 	!print *, "ans2 = ", ans2
 	!print *, "section 2 done"
@@ -274,7 +266,7 @@ end function part1
 
 !===============================================================================
 
-recursive logical function search(ds, ig, id, has_horz, has_vert, navail, sln) result(ans)
+recursive logical function search(ds, ig, id, has_horz, has_vert, sln) result(ans)
 	! Pack the domino `id` into integer grid `ig`, return false if it violates
 	! geometric or numeric constraints. Solution string `sln` is returned as
 	! out-arg
@@ -284,15 +276,14 @@ recursive logical function search(ds, ig, id, has_horz, has_vert, navail, sln) r
 	integer, intent(inout) :: ig(:,:)
 	integer, intent(in) :: id
 	logical, intent(in) :: has_horz(:,:), has_vert(:,:)
-	integer, intent(in) :: navail(:)
 	character(len=:), allocatable :: sln
 	!********
 	character :: c
 	character, allocatable :: g(:,:)
-	integer :: i, x0, y0, t, ndx, ndy, x, y, ic, ip, max_avail, &
+	integer :: i, x0, y0, t, ndx, ndy, x, y, ic, ip, &
 		r1, r2, ir, rc1, rc2, ix
 	integer :: sums(128), vals(32, 128), nvals(128), sums_max(128)
-	integer, allocatable :: d(:,:), igl(:,:), navaill(:), rs(:), rcs(:)
+	integer, allocatable :: d(:,:), igl(:,:), rs(:), rcs(:)
 	logical :: can_pack = .true.
 	logical :: is_complete(128)  ! keys are ascii so arrays are size 128
 	logical, allocatable :: has_horzl(:,:), has_vertl(:,:)
@@ -351,23 +342,11 @@ recursive logical function search(ds, ig, id, has_horz, has_vert, navail, sln) r
 
 		has_horzl = has_horz
 		has_vertl = has_vert
-		navaill = navail
 		if (ndx > 1) then
 			has_horzl(x0,y0) = .true.
 		else
 			has_vertl(x0,y0) = .true.
 		end if
-
-		! Decrement the available count
-		navaill(ds(1,id)+1) = navaill(ds(1,id)+1) - 1
-		navaill(ds(2,id)+1) = navaill(ds(2,id)+1) - 1
-		max_avail = 0
-		do i = 0, 6
-			if (navaill(i+1) > 0) max_avail = i
-		end do
-
-		!! Almost always 6. Might not be worth it
-		!if (max_avail < 6) print *, "max_avail = ", max_avail
 
 		rc1 = ichar(cg( x0, y0 ))
 		rc2 = ichar(cg( x0+ndx-1, y0+ndy-1 ))
@@ -385,7 +364,7 @@ recursive logical function search(ds, ig, id, has_horz, has_vert, navail, sln) r
 
 		! Check if the sums of each region satisfy the numeric constraints
 		!
-		! TODO: a lot of the optimizations, like `nrx`, `pts`, and `max_avail`,
+		! TODO: a lot of the optimizations, like `nrx`, `pts`,
 		! did not help significantly.  Revert those to simplify and benchmark.
 		! Only sorting, threading, and sums_max += 6 help significantly
 		sums = 0
@@ -402,8 +381,7 @@ recursive logical function search(ds, ig, id, has_horz, has_vert, navail, sln) r
 			if (c == "*") cycle  ! wildcard, free square
 			ic = ichar(c)
 			if (igl(x,y) < 0) then
-				!sums_max(ic) = sums_max(ic) + 6  ! max possible sum if all remaining squares are 6
-				sums_max(ic) = sums_max(ic) + max_avail
+				sums_max(ic) = sums_max(ic) + 6  ! max possible sum if all remaining squares are 6
 				is_complete(ic) = .false.
 				cycle
 			end if
@@ -453,7 +431,7 @@ recursive logical function search(ds, ig, id, has_horz, has_vert, navail, sln) r
 		if (.not. can_pack) cycle
 		!call print_mat_i32("igl (wip) = ", transpose(igl))
 
-		if (search(ds, igl, id+1, has_horzl, has_vertl, navaill, sln)) then
+		if (search(ds, igl, id+1, has_horzl, has_vertl, sln)) then
 			ans = .true.
 			return
 		end if

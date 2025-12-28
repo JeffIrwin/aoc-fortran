@@ -153,13 +153,14 @@ function part1(args) result(ans_)
 
 	! Reverse search makes sense and is faster for 2025-12-27's hard problem
 	!
-	! Somehow forward search is faster for 2025-12-26's hard problem
+	! Somehow forward search is faster for 2025-12-26's hard problem, and it is
+	! much better on average and worst case
 	!
 	! Could take both sorts, plus some random shuffles, and solve all in
 	! parallel. Would need an atomic to print answer once and maybe caching
 
-	ds = ds(:, reverse(sort_index(sum(ds,1)))) ! TODO
-	!ds = ds(:, sort_index(sum(ds,1)))
+	!ds = ds(:, reverse(sort_index(sum(ds,1))))
+	ds = ds(:, sort_index(sum(ds,1)))
 
 	call print_mat_i32("ds (transpose) = ", ds)
 
@@ -232,7 +233,7 @@ recursive logical function search(ig, id, has_horz, has_vert) result(ans)
 	character :: c
 	character, allocatable :: g(:,:)
 	integer :: i, x0, y0, t, ndx, ndy, x, y, ic, ip
-	integer :: sums(128), vals(8, 128), nvals(128)
+	integer :: sums(128), vals(8, 128), nvals(128), sums_max(128)
 	integer, allocatable :: d(:,:), igl(:,:)
 	logical :: can_pack = .true.
 	logical :: is_complete(128)  ! keys are ascii so arrays are size 128
@@ -299,6 +300,7 @@ recursive logical function search(ig, id, has_horz, has_vert) result(ans)
 
 		! Check if the sums of each region satisfy the numeric constraints
 		sums = 0
+		sums_max = 0
 		is_complete = .true.
 		nvals = 0
 		do y = 1, ny
@@ -307,10 +309,12 @@ recursive logical function search(ig, id, has_horz, has_vert) result(ans)
 			if (c == "*") cycle  ! wildcard, free square
 			ic = ichar(c)
 			if (igl(x,y) < 0) then
+				sums_max(ic) = sums_max(ic) + 6  ! max possible sum if all remaining squares are 6
 				is_complete(ic) = .false.
 				cycle
 			end if
 			sums(ic) = sums(ic) + igl(x,y)
+			sums_max(ic) = sums_max(ic) + igl(x,y)
 			nvals(ic) = nvals(ic) + 1
 			vals(nvals(ic), ic) = igl(x,y)
 		end do
@@ -329,15 +333,19 @@ recursive logical function search(ig, id, has_horz, has_vert) result(ans)
 				if (is_complete(ic)) then
 					can_pack = sums(ic) == rv(i)
 				else
-					! Could be more optimal in a few cases by analyzing sums and
-					! max vals of unused dominoes
-					can_pack = sums(ic) <= rv(i)
+					! Could be even more optimal in a few cases by analyzing
+					! sums and max vals of unused dominoes. There isn't an
+					! infinite supply of 6's. We could have a sorted vector of
+					! individual squares plus a bool array, mark them while they
+					! are used up, and then increment sums_max by the max
+					! available instead of always by 6
+					can_pack = sums(ic) <= rv(i) .and. sums_max(ic) >= rv(i)
 				end if
 			case (">")
 				if (is_complete(ic)) then
 					can_pack = sums(ic) > rv(i)
 				else
-					can_pack = .true.
+					can_pack = sums_max(ic) > rv(i)
 				end if
 			case ("<")
 				can_pack = sums(ic) < rv(i)

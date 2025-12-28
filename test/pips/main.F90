@@ -4,11 +4,11 @@ module aoc_m
 	use aoc_all_m
 	implicit none
 
-	! Global variables
+	! Global variables. TODO: package these immutable vars into a pips_t game
+	! struct
 	character, allocatable :: cg(:,:), rl(:), rt(:)
 	integer :: nx, ny, nr, nd
 	integer, allocatable :: rv(:), ds(:,:)
-
 	integer, allocatable :: pts(:,:)
 
 contains
@@ -214,25 +214,26 @@ function part1(args) result(ans_)
 	!print *, "navail = ", navail
 
 	write(*,*) "Searching for solution ..."
-	is_solvable = search(ig, 1, has_horz, has_vert, navail)
+	is_solvable = search(ig, 1, has_horz, has_vert, navail, ans_)
 	if (.not. is_solvable) then
 		call panic("puzzle is not solvable")
 	end if
-	ans_ = to_str(sum_)  ! TODO: cleanup some of this vestigial AOC stuff
 
 end function part1
 
 !===============================================================================
 
-recursive logical function search(ig, id, has_horz, has_vert, navail) result(ans)
+recursive logical function search(ig, id, has_horz, has_vert, navail, sln) result(ans)
 	! Pack the domino `id` into integer grid `ig`, return false if it violates
-	! geometric or numeric constraints
+	! geometric or numeric constraints. Solution string `sln` is returned as
+	! out-arg
 
 	use utils_m  ! should be unnecessary but linter is mad
 	integer  , intent(inout) :: ig(:,:)
 	integer  , intent(in) :: id
 	logical, intent(in) :: has_horz(:,:), has_vert(:,:)
 	integer, intent(in) :: navail(:)
+	character(len=:), allocatable :: sln
 	!********
 	character :: c
 	character, allocatable :: g(:,:)
@@ -264,7 +265,10 @@ recursive logical function search(ig, id, has_horz, has_vert, navail) result(ans
 		end do
 		end do
 
+		! Maybe this should return the char mat `g` instead of the single string `sln`
 		call print_mat_char("answer = ", g)
+		sln = mat_char_to_str(g, ":")
+		print *, "sln = ", sln
 		return
 	end if
 
@@ -366,7 +370,7 @@ recursive logical function search(ig, id, has_horz, has_vert, navail) result(ans
 		if (.not. can_pack) cycle
 		!call print_mat_i32("igl (wip) = ", transpose(igl))
 
-		if (search(igl, id+1, has_horzl, has_vertl, navaill)) then
+		if (search(igl, id+1, has_horzl, has_vertl, navaill, sln)) then
 			ans = .true.
 			return
 		end if
@@ -444,43 +448,45 @@ end module aoc_m
 program main
 	use aoc_m
 	use args_m
+	use utils_m
 	implicit none
 
-	character(len = :), allocatable :: p1, p2, expect1, expect2
-	logical :: do_p1, do_p2, error = .false.
+	character(len = :), allocatable :: p1, expect1
+	logical :: error = .false.
 	type(args_t) :: args
 
 	args = parse_args()
 	write(*,*) fg_bright_magenta//"Starting Fortran AOC"//color_reset
 
-	do_p1 = .true.
-	do_p2 = .true.
-	if (args%part1 .and. .not. args%part2) do_p2 = .false.
-	if (args%part2 .and. .not. args%part1) do_p1 = .false.
+	p1 = part1(args)
+	p1 = rm_char(p1, " ")
+	print *, "p1 = ", p1
 
-	p1 = ""
-	p2 = ""
+	select case (args%input_filename)
+	case ("easy-2025-12-28.txt")
+		expect1 = ":5-6::6:|:3::5-33:|:2-24:"
 
-	if (do_p1) p1 = part1(args)
-	!write(*,*) "    "//p1//":"//p2
+	case ("medium-2025-12-27.txt")
+		expect1 = ":3-01-3::5-516-542-0:||:21:"
+	case ("medium-2025-12-28.txt")
+		expect1 = ":6:|:1-122-2::0-30-2::1-33-2:"
+
+	case ("hard-2025-12-26.txt")
+		expect1 = ":5-51-2::6-33-2::5-3::1-3::13:||:43::53-00:||:11-00::6-6::0:|:6::6-4:"
+	case ("hard-2025-12-27.txt")
+		expect1 = ":65:||:25::3333:||||:6512::6-02-5::4-04-1::52:||:11::::0:|:00:|:42:|:4:"
+	case ("hard-2025-12-28.txt")
+		expect1 = ":54-51:||:66-11::45:||:02::0-56-2::044-4:||:22::2-2:"
+
+	case default
+		expect1 = "REPLACE_ME"
+	end select
 
 	if (args%assert) then
 
-		expect1 = "REPLACE_ME"
-		expect2 = "REPLACE_ME"
-		if (args%test) then
-			expect1 = "REPLACE_ME"
-			expect2 = "REPLACE_ME"
-		end if
-
-		if (do_p1 .and. p1 /= expect1) then
+		if (p1 /= expect1) then
 			write(*,*) ERROR_STR//'wrong part 1 answer.  Got "' &
 				//p1//'", expected "'//expect1//'"'
-			error = .true.
-		end if
-		if (do_p2 .and. p2 /= expect2) then
-			write(*,*) ERROR_STR//'wrong part 2 answer.  Got "' &
-				//p2//'", expected "'//expect2//'"'
 			error = .true.
 		end if
 		if (error) call panic("")

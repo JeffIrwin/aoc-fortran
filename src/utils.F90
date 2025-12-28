@@ -535,6 +535,30 @@ end subroutine print_mat_char
 
 !===============================================================================
 
+function mat_char_to_str(a, delim) result(str)
+	! Convert a character matrix to a single string with a given delimiter
+	! between lines
+	character, intent(in) :: a(:,:), delim
+	character(len=:), allocatable :: str
+	!********
+	integer :: i, j, m, n
+	m = size(a,1)
+	n = size(a,2)
+
+	str = "" ! TODO: pre-allocate
+	do j = 1, n
+		do i = 1, m
+			!write(*, "(a)", advance = "no") a(i,j)
+			str = str // a(i,j)
+		end do
+		!write(unit_, *)
+		str = str // delim
+	end do
+
+end function mat_char_to_str
+
+!===============================================================================
+
 subroutine panic(msg)
 	character(len = *), intent(in) :: msg
 	if (msg /= "") write(*,*) ERROR_STR//msg
@@ -607,6 +631,25 @@ logical function is_digit(c)
 	character, intent(in) :: c
 	is_digit = "0" <= c .and. c <= "9"
 end function is_digit
+
+!===============================================================================
+
+function rm_char(str, char)
+	character(len=*), intent(in) :: str
+	character, intent(in) :: char
+	character(len=:), allocatable :: rm_char
+	!********
+	integer :: i, j
+	rm_char = str  ! over-allocate
+	j = 0
+	do i = 1, len(str)
+		if (str(i:i) == char) cycle
+		j = j + 1
+		rm_char(j:j) = str(i:i)
+	end do
+	rm_char = rm_char(1:j)
+
+end function rm_char
 
 !===============================================================================
 

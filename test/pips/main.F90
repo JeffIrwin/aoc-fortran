@@ -166,20 +166,18 @@ function part1(args) result(ans_)
 	! Somehow forward search is faster for 2025-12-26's hard problem, and it is
 	! much better on average and worst case
 	!
-	! Could take both sorts, plus some random shuffles, and solve all in
-	! parallel. Would need an atomic to print answer once and maybe caching
-
+	! Solve both sorts in parallel on different threads.  Most (?) problems
+	! finish at least one thread quickly (<1s) and then the other thread could
+	! stop.  Random unsorted permutations could be added in more threads but I
+	! don't see the need unless there are problems that take longer
 	idx1 = sort_index(sum(ds,1))
 	idx2 = reverse(idx1)
-
-	!!ds = ds(:, reverse(sort_index(sum(ds,1))))
-	!ds = ds(:, sort_index(sum(ds,1)))
 	ds1 = ds(:, idx1)
 	ds2 = ds(:, idx2)
 
 	call print_mat_i32("ds (transpose) = ", ds)
 
-	ig = -ones_i32(nx, ny)  ! initialize -1
+	ig = -ones_i32(nx, ny)  ! initialize empty spots as -1
 	has_horz = falses(nx,ny)
 	has_vert = falses(nx,ny)
 	do y = 1, ny
@@ -546,6 +544,10 @@ program main
 	p1 = part1(args)
 	p1 = rm_char(p1, " ")
 	print *, "p1 = ", p1
+
+	! TODO: apparently the New York Times has a NYT API for downloading pips
+	! inputs in JSON format.  Maybe make a helper to convert JSON to my made up
+	! text format used here
 
 	select case (args%input_filename)
 	case ("easy-2025-12-28.txt")

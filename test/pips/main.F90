@@ -14,6 +14,7 @@ contains
 !===============================================================================
 
 function part1(args) result(ans_)
+	use blarg_m
 	type(args_t), intent(in) :: args
 	character(len = :), allocatable :: ans_
 	!********
@@ -23,6 +24,7 @@ function part1(args) result(ans_)
 	integer, allocatable :: ig(:,:)
 	integer(kind=8) :: sum_
 	logical :: is_solvable
+	logical, allocatable :: has_horz(:,:), has_vert(:,:)
 
 	sum_ = 0
 
@@ -157,30 +159,37 @@ function part1(args) result(ans_)
 	end do
 	call print_mat_i32("ig (init) = ", transpose(ig))
 
-	is_solvable = search(ig, 1)
+	has_horz = falses(nx,ny)
+	has_vert = falses(nx,ny)
+	is_solvable = search(ig, 1, has_horz, has_vert)
 	if (.not. is_solvable) then
 		call panic("puzzle is not solvable")
 	end if
 
-	write(*,*) "part 1 = ", to_str(sum_)
+	!write(*,*) "part 1 = ", to_str(sum_)
 	ans_ = to_str(sum_)
 
 end function part1
 
 !===============================================================================
 
-recursive logical function search(ig, id) result(ans)
+recursive logical function search(ig, id, has_horz, has_vert) result(ans)
 	! Pack the domino `id` into integer grid `ig`, return false if it violates
 	! geometric or numeric constraints
+
+	use utils_m  ! should be unnecessary but linter is mad
 	integer  , intent(inout) :: ig(:,:)
 	integer  , intent(in) :: id
+	logical, intent(in) :: has_horz(:,:), has_vert(:,:)
 	!********
 	character :: c
+	character, allocatable :: g(:,:)
 	integer :: i, x0, y0, t, ndx, ndy, x, y, ic
 	integer :: sums(128), vals(32, 128), nvals(128)
 	integer, allocatable :: d(:,:), igl(:,:)
 	logical :: can_pack = .true.
 	logical :: is_complete(128)  ! keys are ascii so arrays are size 128
+	logical, allocatable :: has_horzl(:,:), has_vertl(:,:)
 
 	if (id > size(ds,2)) then
 		ans = .true.  ! base case: all dominoes have been packed
@@ -189,6 +198,21 @@ recursive logical function search(ig, id) result(ans)
 		! just pretty-print the answer somehow in a way that shows whether dominos
 		! are oriented vertically or horizontally
 		call print_mat_i32("ig (ans) = ", transpose(ig))
+		call print_mat_bool("has_horz = ", transpose(has_horz))
+		call print_mat_bool("has_vert = ", transpose(has_vert))
+
+		! Double size to also print horizontal/vertical domino connections
+		allocate(g(2*nx, 2*ny))
+		g = " "
+		do y = 1, ny
+		do x = 1, nx
+			if (ig(x,y) >= 0) g(2*x, 2*y) = to_str(ig(x,y))
+			if (has_horz(x,y)) g(2*x+1, 2*y) = "-"
+			if (has_vert(x,y)) g(2*x, 2*y+1) = "|"
+		end do
+		end do
+
+		call print_mat_char("answer = ", g)
 
 		return
 	end if
@@ -222,6 +246,14 @@ recursive logical function search(ig, id) result(ans)
 
 		igl = ig  ! local copy
 		igl(x0: x0+ndx-1, y0: y0+ndy-1) = d
+
+		has_horzl = has_horz
+		has_vertl = has_vert
+		if (ndx > 1) then
+			has_horzl(x0,y0) = .true.
+		else
+			has_vertl(x0,y0) = .true.
+		end if
 
 		! Check if the sums of each region satisfy the numeric constraints
 		sums = 0
@@ -279,7 +311,7 @@ recursive logical function search(ig, id) result(ans)
 		if (.not. can_pack) cycle
 		!call print_mat_i32("igl (wip) = ", transpose(igl))
 
-		if (search(igl, id+1)) then
+		if (search(igl, id+1, has_horzl, has_vertl)) then
 			ans = .true.
 			return
 		end if
@@ -377,9 +409,7 @@ program main
 	p2 = ""
 
 	if (do_p1) p1 = part1(args)
-	!if (do_p2) p2 = part2(args)
-
-	write(*,*) "    "//p1//":"//p2
+	!write(*,*) "    "//p1//":"//p2
 
 	if (args%assert) then
 

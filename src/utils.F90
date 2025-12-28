@@ -412,6 +412,31 @@ end subroutine print_mat_f32
 
 !===============================================================================
 
+subroutine print_mat_bool(msg, a)
+	! Pretty-print a matrix
+	!
+	! Note that this is transposed compared to Fortran's internal memory layout
+	!
+	! TODO: optional output file unit arg
+	character(len = *), intent(in) :: msg
+	logical, intent(in) :: a(:,:)
+	!********
+	integer :: i, j, m, n
+	integer, parameter :: unit_ = output_unit
+	m = size(a,1)
+	n = size(a,2)
+	write(unit_, "(a)") " " // msg
+	do i = 1, m
+		do j = 1, n
+			write(*, "(l)", advance = "no") a(i,j)
+		end do
+		write(unit_, *)
+	end do
+
+end subroutine print_mat_bool
+
+!===============================================================================
+
 subroutine print_mat_i32(msg, a)
 	! Pretty-print a matrix
 	!

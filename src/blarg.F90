@@ -57,11 +57,11 @@ module blarg_m
 
 	interface falses
 		procedure :: falses_vec
-		! could add mat version too
+		procedure :: falses_mat
 	end interface falses
 	interface trues
 		procedure :: trues_vec
-		! could add mat version too
+		procedure :: trues_mat
 	end interface trues
 
 	interface diag
@@ -290,6 +290,14 @@ function falses_vec(n) result(a)
 	a = .false.
 end function falses_vec
 
+function falses_mat(m, n) result(a)
+	! Size n vector of .false.
+	integer, intent(in) :: m, n
+	logical, allocatable :: a(:,:)
+	allocate(a(m, n))
+	a = .false.
+end function falses_mat
+
 function trues_vec(n) result(a)
 	! Size n vector of .true.
 	integer, intent(in) :: n
@@ -297,6 +305,14 @@ function trues_vec(n) result(a)
 	allocate(a(n))
 	a = .true.
 end function trues_vec
+
+function trues_mat(m, n) result(a)
+	! Size n vector of .true.
+	integer, intent(in) :: m, n
+	logical, allocatable :: a(:,:)
+	allocate(a(m, n))
+	a = .true.
+end function trues_mat
 
 !********
 

@@ -4,7 +4,7 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 if (CMAKE_BUILD_TYPE STREQUAL "Release")
-	add_compile_options(-O3)
+	add_compile_options(-O3 -fopenmp)
 else()  # Debug
 	add_compile_options(-g -O0 -fbacktrace)
 	add_compile_options(-fcheck=all -fcheck=bounds -fcheck=array-temps)

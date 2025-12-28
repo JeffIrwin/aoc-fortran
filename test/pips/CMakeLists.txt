@@ -18,5 +18,7 @@ include(../../template/flags.cmake)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_executable(${PROJECT} ${SRCS})
-target_link_libraries(${PROJECT} aoc-fortran)
+
+# gomp is for OpenMP. TODO: add to template?
+target_link_libraries(${PROJECT} aoc-fortran gomp)
 

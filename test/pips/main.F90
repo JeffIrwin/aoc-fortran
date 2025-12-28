@@ -8,7 +8,8 @@ module aoc_m
 	! struct
 	character, allocatable :: cg(:,:), rl(:), rt(:)
 	integer :: nx, ny, nr, nd, rmap(128)
-	integer, allocatable :: rv(:), ds(:,:)
+	integer, allocatable :: rv(:)
+	!integer, allocatable :: ds(:,:)
 	integer, allocatable :: pts(:,:)
 	integer :: rx(2, 32, 128), nrx(128)
 	!integer :: rx(2, 8, 128), nrx(128)
@@ -25,7 +26,8 @@ function part1(args) result(ans_)
 	character :: c
 	character(len = :), allocatable :: filename, str_
 	integer :: i, iu, io, x, y, np, ic
-	integer, allocatable :: ig(:,:), navail(:)
+	integer, allocatable :: ig(:,:), navail(:), idx1(:), idx2(:)
+	integer, allocatable :: ds(:,:), ds1(:,:), ds2(:,:)
 	integer(kind=8) :: sum_
 	logical :: is_solvable
 	logical, allocatable :: has_horz(:,:), has_vert(:,:)
@@ -167,8 +169,13 @@ function part1(args) result(ans_)
 	! Could take both sorts, plus some random shuffles, and solve all in
 	! parallel. Would need an atomic to print answer once and maybe caching
 
-	!ds = ds(:, reverse(sort_index(sum(ds,1))))
-	ds = ds(:, sort_index(sum(ds,1)))
+	idx1 = sort_index(sum(ds,1))
+	idx2 = reverse(idx1)
+
+	!!ds = ds(:, reverse(sort_index(sum(ds,1))))
+	!ds = ds(:, sort_index(sum(ds,1)))
+	ds1 = ds(:, idx1)
+	ds2 = ds(:, idx2)
 
 	call print_mat_i32("ds (transpose) = ", ds)
 
@@ -238,7 +245,35 @@ function part1(args) result(ans_)
 	!!stop
 
 	write(*,*) "Searching for solution ..."
-	is_solvable = search(ig, 1, has_horz, has_vert, navail, ans_)
+
+!$omp parallel default(shared) private(ans_)
+!$omp sections
+
+!$omp section
+!!$omp single nowait
+!!$omp task
+
+	! TODO: do we need has_horz1 copy (and has_vert, navail) for each thread
+	! section?
+
+	is_solvable = search(ds1, ig, 1, has_horz, has_vert, navail, ans_)
+	print *, "ans_ = ", ans_
+	print *, "task 1 done"
+!!$omp end task
+!!$omp end single
+
+!$omp section
+!!$omp single nowait
+!!$omp task
+	is_solvable = search(ds2, ig, 1, has_horz, has_vert, navail, ans_)
+	print *, "ans_ = ", ans_
+	print *, "task 2 done"
+!!$omp end task
+!!$omp end single
+
+!$omp end sections
+!$omp end parallel
+
 	if (.not. is_solvable) then
 		call panic("puzzle is not solvable")
 	end if
@@ -247,14 +282,15 @@ end function part1
 
 !===============================================================================
 
-recursive logical function search(ig, id, has_horz, has_vert, navail, sln) result(ans)
+recursive logical function search(ds, ig, id, has_horz, has_vert, navail, sln) result(ans)
 	! Pack the domino `id` into integer grid `ig`, return false if it violates
 	! geometric or numeric constraints. Solution string `sln` is returned as
 	! out-arg
 
 	use utils_m  ! should be unnecessary but linter is mad
-	integer  , intent(inout) :: ig(:,:)
-	integer  , intent(in) :: id
+	integer, intent(in) :: ds(:,:)
+	integer, intent(inout) :: ig(:,:)
+	integer, intent(in) :: id
 	logical, intent(in) :: has_horz(:,:), has_vert(:,:)
 	integer, intent(in) :: navail(:)
 	character(len=:), allocatable :: sln
@@ -422,7 +458,7 @@ recursive logical function search(ig, id, has_horz, has_vert, navail, sln) resul
 		if (.not. can_pack) cycle
 		!call print_mat_i32("igl (wip) = ", transpose(igl))
 
-		if (search(igl, id+1, has_horzl, has_vertl, navaill, sln)) then
+		if (search(ds, igl, id+1, has_horzl, has_vertl, navaill, sln)) then
 			ans = .true.
 			return
 		end if

@@ -10,6 +10,8 @@ module aoc_m
 	integer :: nx, ny, nr, nd, rmap(128)
 	integer, allocatable :: rv(:), ds(:,:)
 	integer, allocatable :: pts(:,:)
+	integer :: rx(2, 32, 128), nrx(128)
+	!integer :: rx(2, 8, 128), nrx(128)
 
 contains
 
@@ -22,7 +24,7 @@ function part1(args) result(ans_)
 	!********
 	character :: c
 	character(len = :), allocatable :: filename, str_
-	integer :: i, iu, io, x, y, np
+	integer :: i, iu, io, x, y, np, ic
 	integer, allocatable :: ig(:,:), navail(:)
 	integer(kind=8) :: sum_
 	logical :: is_solvable
@@ -219,6 +221,22 @@ function part1(args) result(ans_)
 	end do
 	!print *, "navail = ", navail
 
+	! Make a list of the coordinates that make up each region
+	nrx = 0
+	rx = 0
+	do y = 1, ny
+	do x = 1, nx
+		if (cg(x,y) == ".") cycle
+		if (cg(x,y) == "*") cycle
+		ic = ichar(cg(x,y))
+		nrx(ic) = nrx(ic) + 1
+		rx(:, nrx(ic), ic) = [x, y]
+	end do
+	end do
+	!print *, "rx = "
+	!print "(16i4)", rx
+	!!stop
+
 	write(*,*) "Searching for solution ..."
 	is_solvable = search(ig, 1, has_horz, has_vert, navail, ans_)
 	if (.not. is_solvable) then
@@ -243,9 +261,10 @@ recursive logical function search(ig, id, has_horz, has_vert, navail, sln) resul
 	!********
 	character :: c
 	character, allocatable :: g(:,:)
-	integer :: i, x0, y0, t, ndx, ndy, x, y, ic, ip, max_avail, r1, r2, ir
-	integer :: sums(128), vals(8, 128), nvals(128), sums_max(128)
-	integer, allocatable :: d(:,:), igl(:,:), navaill(:), rs(:)
+	integer :: i, x0, y0, t, ndx, ndy, x, y, ic, ip, max_avail, &
+		r1, r2, ir, rc1, rc2, ix
+	integer :: sums(128), vals(32, 128), nvals(128), sums_max(128)
+	integer, allocatable :: d(:,:), igl(:,:), navaill(:), rs(:), rcs(:)
 	logical :: can_pack = .true.
 	logical :: is_complete(128)  ! keys are ascii so arrays are size 128
 	logical, allocatable :: has_horzl(:,:), has_vertl(:,:)
@@ -318,23 +337,36 @@ recursive logical function search(ig, id, has_horz, has_vert, navail, sln) resul
 		!! Almost always 6. Might not be worth it
 		!if (max_avail < 6) print *, "max_avail = ", max_avail
 
+		rc1 = ichar(cg( x0, y0 ))
+		rc2 = ichar(cg( x0+ndx-1, y0+ndy-1 ))
 		r1 = rmap(ichar(cg( x0, y0 )))
 		r2 = rmap(ichar(cg( x0+ndx-1, y0+ndy-1 )))
 		!print *, "r12 = ", r1, r2
 		if (r1 == r2) then
 			rs = [r1]
+			rcs = [rc1]
 		else
 			rs = [r1, r2]
+			rcs = [rc1, rc2]
 		end if
 		!print *, "rs = ", rs
 
 		! Check if the sums of each region satisfy the numeric constraints
+		!
+		! TODO: only sum the 1 or 2 region(s) that are touched by the domino that was just placed
 		sums = 0
 		sums_max = 0
 		is_complete = .true.
 		nvals = 0
-		do y = 1, ny
-		do x = 1, nx
+		do ir = 1, size(rs)
+		do ix = 1, nrx(rcs(ir))
+		!do y = 1, ny
+		!do x = 1, nx
+
+			!rx(:, nrx(ic), ic) = [x, y]
+			x = rx(1, ix, rcs(ir))
+			y = rx(2, ix, rcs(ir))
+
 			c = cg(x,y)
 			if (c == "*") cycle  ! wildcard, free square
 			ic = ichar(c)
@@ -348,14 +380,12 @@ recursive logical function search(ig, id, has_horz, has_vert, navail, sln) resul
 			sums_max(ic) = sums_max(ic) + igl(x,y)
 			nvals(ic) = nvals(ic) + 1
 			vals(nvals(ic), ic) = igl(x,y)
+
 		end do
 		end do
 
-		! TODO: only check (and sum) the 1 or 2 region(s) that are touched by the domino that was just placed
 		can_pack = .true.
 		!print *, "sums = "
-
-		!do i = 1, nr
 		do ir = 1, size(rs)
 			i = rs(ir)
 			if (i <= 0) cycle  ! wildcard

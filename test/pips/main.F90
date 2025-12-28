@@ -9,7 +9,6 @@ module aoc_m
 	character, allocatable :: cg(:,:), rl(:), rt(:)
 	integer :: nx, ny, nr, nd, rmap(128)
 	integer, allocatable :: rv(:)
-	integer, allocatable :: pts(:,:)
 	integer :: rx(2, 32, 128), nrx(128)
 
 	logical :: has_sln  ! shared mutable thread control. dangerous!
@@ -25,7 +24,7 @@ function part1(args) result(ans_)
 	!********
 	character :: c
 	character(len = :), allocatable :: filename, str_, ans1, ans2
-	integer :: i, iu, io, x, y, np, ic
+	integer :: i, iu, io, x, y, ic
 	integer, allocatable :: ig(:,:), idx1(:), idx2(:)
 	integer, allocatable :: ds(:,:), ds1(:,:), ds2(:,:)
 	integer(kind=8) :: sum_
@@ -187,37 +186,6 @@ function part1(args) result(ans_)
 	end do
 	!call print_mat_i32("ig (init) = ", transpose(ig))
 
-	! A lot (2x?) of work is wasted re-scanning over geometrically unpackable
-	! positions. Make a pre-computed table before recursion of x, y, and t
-	! values where dominoes can be packed, if sorting isn't enough optimization
-	np = 0
-	allocate(pts(3, 4*count(cg /= ".")))
-	do y = 1, ny
-	do x = 1, nx
-		if (cg(x,y) == ".") cycle
-
-		c = "."
-		if (x < nx) c = cg(x+1, y)
-		if (c /= ".") then
-			np = np + 1
-			pts(:,np) = [x, y, 3]
-			np = np + 1
-			pts(:,np) = [x, y, 4]
-		end if
-
-		c = "."
-		if (y < ny) c = cg(x, y+1)
-		if (c /= ".") then
-			np = np + 1
-			pts(:,np) = [x, y, 1]
-			np = np + 1
-			pts(:,np) = [x, y, 2]
-		end if
-	end do
-	end do
-	pts = pts(:, 1: np)  ! trim
-	!print *, "pts = ", pts
-
 	! Make a list of the coordinates that make up each region
 	nrx = 0
 	rx = 0
@@ -280,7 +248,7 @@ recursive logical function search(ds, ig, id, has_horz, has_vert, sln) result(an
 	!********
 	character :: c
 	character, allocatable :: g(:,:)
-	integer :: i, x0, y0, t, ndx, ndy, x, y, ic, ip, &
+	integer :: i, x0, y0, t, ndx, ndy, x, y, ic, &
 		r1, r2, ir, rc1, rc2, ix
 	integer :: sums(128), vals(32, 128), nvals(128), sums_max(128)
 	integer, allocatable :: d(:,:), igl(:,:), rs(:), rcs(:)
@@ -323,15 +291,17 @@ recursive logical function search(ds, ig, id, has_horz, has_vert, sln) result(an
 	! Place the current domino `id` in every possible position and orientation
 	! (transformation)
 	ans = .false.
-	do ip = 1, size(pts,2)
-		x0 = pts(1,ip)  ! unpack
-		y0 = pts(2,ip)
-		t  = pts(3,ip)
-
+	do y0 = 1, ny
+	do x0 = 1, nx
+	do t = 1, 4
 		d = trans_(ds(:,id), t)
 		ndx = size(d,1)
 		ndy = size(d,2)
 		!print *, "x0, y0, size(d) = ", x0, y0, ndx, ndy
+
+		! Check bounds
+		if (x0 + ndx > nx+1) cycle
+		if (y0 + ndy > ny+1) cycle
 
 		! Check if domino position is unoccupied
 		can_pack = all(ig(x0: x0+ndx-1, y0: y0+ndy-1) == -1) ! TODO: magic numbers/chars
@@ -364,7 +334,7 @@ recursive logical function search(ds, ig, id, has_horz, has_vert, sln) result(an
 
 		! Check if the sums of each region satisfy the numeric constraints
 		!
-		! TODO: a lot of the optimizations, like `nrx`, `pts`,
+		! TODO: a lot of the optimizations, like `nrx`,
 		! did not help significantly.  Revert those to simplify and benchmark.
 		! Only sorting, threading, and sums_max += 6 help significantly
 		sums = 0
@@ -435,6 +405,8 @@ recursive logical function search(ds, ig, id, has_horz, has_vert, sln) result(an
 			ans = .true.
 			return
 		end if
+	end do
+	end do
 	end do
 
 end function search

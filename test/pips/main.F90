@@ -23,28 +23,19 @@ contains
 
 !===============================================================================
 
-function part1(args) result(ans_)
+function read_pips_text(filename) result(p)
 	use blarg_m
-	type(args_t), intent(in) :: args
-	character(len = :), allocatable :: ans_
+	character(len=*), intent(in) :: filename
+	type(pips_t) :: p
 	!********
 	character :: c
-	character(len = :), allocatable :: filename, str_, ans1, ans2
+	character(len = :), allocatable :: str_
 	integer :: i, iu, io, x, y
-	integer, allocatable :: ig(:,:), idx1(:), idx2(:)
-	integer, allocatable :: ds1(:,:), ds2(:,:)
-	integer(kind=8) :: sum_
-	logical :: is_solvable1, is_solvable2
-	logical, allocatable :: has_horz(:,:), has_vert(:,:)
-	type(pips_t) :: p
-
-	sum_ = 0
 
 	! First pass: count the number of rows `ny`, regions `nr`, and dominoes `nd`
 	p%ny = 0
 	p%nr = 0
 	p%nd = 0
-	filename = args%input_filename
 	open(newunit = iu, file = filename, action = "read")
 	i = 1
 	do
@@ -161,6 +152,29 @@ function part1(args) result(ans_)
 	close(iu)
 	call print_mat_i32("ds (transpose) = ", p%ds)
 
+end function read_pips_text
+
+!===============================================================================
+
+function do_pips(args) result(ans_)
+	use blarg_m
+	type(args_t), intent(in) :: args
+	character(len = :), allocatable :: ans_
+	!********
+	character(len = :), allocatable :: ans1, ans2
+	integer :: x, y
+	integer, allocatable :: ig(:,:), idx1(:), idx2(:)
+	integer, allocatable :: ds1(:,:), ds2(:,:)
+	integer(kind=8) :: sum_
+	logical :: is_solvable1, is_solvable2
+	logical, allocatable :: has_horz(:,:), has_vert(:,:)
+	type(pips_t) :: p
+
+	sum_ = 0
+
+	! TODO: select reader type based on filename extension, possibly json
+	p = read_pips_text(args%input_filename)
+
 	! Sort dominoes by the sum of each tile. This optimization makes the search
 	! run >10x faster (from 1+ min on laptop battery for hard problem down to <2
 	! sec)
@@ -217,7 +231,7 @@ function part1(args) result(ans_)
 		call panic("puzzle is not solvable")
 	end if
 
-end function part1
+end function do_pips
 
 !===============================================================================
 
@@ -453,7 +467,7 @@ program main
 	args = parse_args()
 	write(*,*) fg_bright_magenta//"Starting Fortran AOC"//color_reset
 
-	p1 = part1(args)
+	p1 = do_pips(args)
 	p1 = rm_char(p1, " ")
 	print *, "p1 = ", p1
 

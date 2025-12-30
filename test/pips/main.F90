@@ -161,19 +161,27 @@ function do_pips(args) result(ans_)
 	type(args_t), intent(in) :: args
 	character(len = :), allocatable :: ans_
 	!********
+	type(pips_t) :: p
+
+	! TODO: select reader type based on filename extension, possibly json, then
+	! solve all three difficulties
+	p = read_pips_text(args%input_filename)
+	ans_ = solve_pips(p)
+
+end function do_pips
+
+!===============================================================================
+
+function solve_pips(p) result(ans_)
+	type(pips_t), intent(in) :: p
+	character(len = :), allocatable :: ans_
+	!********
 	character(len = :), allocatable :: ans1, ans2
 	integer :: x, y
 	integer, allocatable :: ig(:,:), idx1(:), idx2(:)
 	integer, allocatable :: ds1(:,:), ds2(:,:)
-	integer(kind=8) :: sum_
 	logical :: is_solvable1, is_solvable2
 	logical, allocatable :: has_horz(:,:), has_vert(:,:)
-	type(pips_t) :: p
-
-	sum_ = 0
-
-	! TODO: select reader type based on filename extension, possibly json
-	p = read_pips_text(args%input_filename)
 
 	! Sort dominoes by the sum of each tile. This optimization makes the search
 	! run >10x faster (from 1+ min on laptop battery for hard problem down to <2
@@ -231,7 +239,7 @@ function do_pips(args) result(ans_)
 		call panic("puzzle is not solvable")
 	end if
 
-end function do_pips
+end function solve_pips
 
 !===============================================================================
 

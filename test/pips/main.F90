@@ -156,17 +156,180 @@ end function read_pips_text
 
 !===============================================================================
 
+function read_pips_json(filename, difficulty) result(p)
+	use json_module
+	character(len=*), intent(in) :: filename, difficulty
+	type(pips_t) :: p
+	!********
+	integer :: nr, nd, ni, ir, jr, nx, ny, x, y, ii, id
+	type(json_file) :: json
+	character :: c
+	character(len=:), allocatable :: rkey, ikey, dkey, type_
+
+	write(*,*) 'Reading pips JSON file "'//filename//'" '//difficulty//' difficulty ...'
+	select case (difficulty)
+	case ("easy", "medium", "hard")
+	case default
+		call panic('bad difficulty "'//difficulty//'"')
+	end select
+
+	!call json%initialize(stop_on_error = .true., verbose = .true.)
+	call json%initialize(stop_on_error = .true.)
+	call json%load(filename)
+	!call json%print()
+
+	nx = -huge(nx)
+	ny = -huge(ny)
+
+	call json%info(difficulty//".regions", n_children = nr)
+	!print *, "nr = ", nr
+
+	! Read the region constraints, including labels `rl`, types `rt`, and values
+	! `rv`. JSON does not provide labels, so make them here named "A", "B", "C",
+	! ...
+	allocate(p%rl(nr), p%rt(nr), p%rv(nr))
+	p%rt = "."  ! default type: sum equal to given digit
+	p%rv = -1
+
+	! First pass: save regions and get the size [nx, ny] of the game board grid
+	jr = 0  ! non-empty region counter
+	do ir = 1, nr
+		! Iterate over all regions, including empty ones
+
+		rkey = difficulty//".regions["//to_str(ir)//"]"
+		!print *, "rkey = ", rkey
+
+		call json%get(rkey//".type", type_)
+		!print *, "type_ = ", type_
+		if (type_ /= "empty") then
+			jr = jr + 1
+			p%rl(jr) = char(ichar("A") + jr - 1)
+		end if
+		select case (type_)
+		case ("empty")
+			! Do nothing. I don't explicitly save empty regions like others
+		case ("sum")
+			!p%rt(jr) = "."  ! default already initialized
+			call json%get(rkey//".target", p%rv(jr))
+		case ("greater")
+			p%rt(jr) = ">"
+			call json%get(rkey//".target", p%rv(jr))
+		case ("less")
+			p%rt(jr) = "<"
+			call json%get(rkey//".target", p%rv(jr))
+		case ("equals")
+			p%rt(jr) = "="
+		case ("unequal")
+			p%rt(jr) = "!"
+		case default
+			call panic('bad region type "'//type_//'"')
+		end select
+
+		call json%info(rkey//".indices", n_children = ni)
+		!print *, "ni = ", ni
+
+		do ii = 1, ni
+			! Iterate over indices
+			ikey = rkey//".indices["//to_str(ii)//"]"
+			call json%get(ikey//"[1]", x)
+			call json%get(ikey//"[2]", y)
+			!print *, "x, y = ", x, y
+
+			nx = max(nx, x)
+			ny = max(ny, y)
+		end do
+	end do
+	nx = nx + 1  ! convert 0-index to 1-index
+	ny = ny + 1
+	!print *, "nx, ny = ", nx, ny
+	!print *, "rt = ", p%rt
+	allocate(p%cg(nx, ny))
+	p%cg = "."
+
+	p%nr = jr
+	p%rl = p%rl(1: p%nr)  ! trim empties
+	p%rt = p%rt(1: p%nr)
+	p%rv = p%rv(1: p%nr)
+
+	!print "(a,"//to_str(nr)//"a3)", " rl = ", p%rl
+	!print "(a,"//to_str(nr)//"a3)", " rt = ", p%rt
+	!print "(a,"//to_str(nr)//"i3)", " rv = ", p%rv
+
+	! Second pass: save the grid
+	jr = 0  ! non-empty region counter
+	do ir = 1, nr
+		rkey = difficulty//".regions["//to_str(ir)//"]"
+		call json%get(rkey//".type", type_)
+		if (type_ == "empty") then
+			c = "*"
+		else
+			jr = jr + 1
+			c = p%rl(jr)
+		end if
+		call json%info(rkey//".indices", n_children = ni)
+		do ii = 1, ni
+			! Iterate over indices
+			ikey = rkey//".indices["//to_str(ii)//"]"
+			call json%get(ikey//"[1]", x)
+			call json%get(ikey//"[2]", y)
+			!print *, "x, y = ", x, y
+			p%cg(x+1, y+1) = c
+		end do
+	end do
+
+	! JSON input uses [row, col] convention, but I prefer [x, y]
+	p%cg = transpose(p%cg)
+	p%nx = ny
+	p%ny = nx
+
+	!call print_mat_char("cg = ", p%cg)
+
+	! Parse the dominoes
+	call json%info(difficulty//".dominoes", n_children = nd)
+	!print *, "nd = ", nd
+	allocate(p%ds(2, nd))
+	do id = 1, nd
+		dkey = difficulty//".dominoes["//to_str(id)//"]"
+		call json%get(dkey//"[1]", p%ds(1, id))
+		call json%get(dkey//"[2]", p%ds(2, id))
+	end do
+	p%nd = nd
+	!call print_mat_i32("ds (transpose) = ", p%ds)
+
+end function read_pips_json
+
+!===============================================================================
+
 function do_pips(args) result(ans_)
 	use blarg_m
 	type(args_t), intent(in) :: args
 	character(len = :), allocatable :: ans_
 	!********
+	character(len = :), allocatable :: d
+	integer :: i
 	type(pips_t) :: p
+	type(str_vec_t) :: difficulties
 
-	! TODO: select reader type based on filename extension, possibly json, then
-	! solve all three difficulties
-	p = read_pips_text(args%input_filename)
-	ans_ = solve_pips(p)
+	if (ends_with(args%input_filename, ".txt")) then
+		p = read_pips_text(args%input_filename)
+		ans_ = solve_pips(p)
+	else if (ends_with(args%input_filename, ".json")) then
+
+		difficulties = new_str_vec()
+		call difficulties%push("easy")
+		call difficulties%push("medium")
+		call difficulties%push("hard")
+
+		ans_ = ""
+		do i = 1, i32(difficulties%len)
+			d = difficulties%vec(i)%str
+			p = read_pips_json(args%input_filename, d)
+			ans_ = ans_ // solve_pips(p) // ";"
+		end do
+
+	else
+		call panic('bad file extension in "'//args%input_filename//'"')
+	end if
 
 end function do_pips
 
@@ -265,12 +428,6 @@ recursive logical function search(p, ds, ig, id, has_horz, has_vert, sln) result
 	logical :: is_complete(128)  ! keys are ascii so arrays are size 128
 	logical, allocatable :: has_horzl(:,:), has_vertl(:,:)
 
-	if (has_sln) then
-		sln = ""
-		ans = .false.
-		return
-	end if
-
 	if (id > size(ds,2)) then
 !$omp critical
 		ans = .true.  ! base case: all dominoes have been packed
@@ -303,6 +460,12 @@ recursive logical function search(p, ds, ig, id, has_horz, has_vert, sln) result
 	do y0 = 1, p%ny
 	do x0 = 1, p%nx
 	do t = 1, 4
+		if (has_sln) then
+			sln = ""
+			ans = .false.
+			return
+		end if
+
 		d = trans_(ds(:,id), t)
 		ndx = size(d,1)
 		ndy = size(d,2)
@@ -480,6 +643,7 @@ program main
 	print *, "p1 = ", p1
 
 	select case (args%input_filename)
+
 	case ("inputs/easy-2025-12-28.txt")
 		expect1 = ":5-6::6:|:3::5-33:|:2-24:"
 
@@ -494,6 +658,9 @@ program main
 		expect1 = ":65:||:25::3333:||||:6512::6-02-5::4-04-1::52:||:11::::0:|:00:|:42:|:4:"
 	case ("inputs/hard-2025-12-28.txt")
 		expect1 = ":54-51:||:66-11::45:||:02::0-56-2::044-4:||:22::2-2:"
+
+	case ("inputs/2025-12-24.json")
+		expect1 = ":0:|:2::24-6:|:66:|:1-33:;:1-30-4::010:|||:041::5-54-3:;:3-36-4::6444:||||:5203::2-33-0::1-5::10:||:25::1-6:;"
 
 	case default
 		expect1 = "REPLACE_ME"

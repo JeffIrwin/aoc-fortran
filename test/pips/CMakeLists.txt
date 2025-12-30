@@ -26,7 +26,7 @@ add_executable(${PROJECT} ${SRCS})
 add_executable(${CONV}    ${CONV_SRCS})
 
 # gomp is for OpenMP. TODO: add to template?
-target_link_libraries(${PROJECT} aoc-fortran gomp)
+target_link_libraries(${PROJECT} aoc-fortran gomp jsonfortran-static)
 target_link_libraries(${CONV} aoc-fortran gomp)
 target_link_libraries(${CONV} jsonfortran-static)
 

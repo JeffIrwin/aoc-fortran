@@ -651,6 +651,14 @@ end function rm_char
 
 !===============================================================================
 
+logical function ends_with(str, substr)
+	character(len=*), intent(in) :: str, substr
+	!print *, "ending = ", str(len(str) - len(substr) + 1:)
+	ends_with = is_str_eq(substr, str(len(str) - len(substr) + 1:))
+end function ends_with
+
+!===============================================================================
+
 end module utils_m
 
 !===============================================================================

@@ -14,7 +14,9 @@ debug_tests+=("hard-2025-12-28.txt")
 
 release_tests=("${debug_tests[@]}")
 release_tests+=("hard-2025-12-26.txt")
-release_tests+=("hard-2025-12-27.txt")  # aka "input.txt", slow!
+release_tests+=("hard-2025-12-27.txt")  # aka "input.txt"
+
+release_tests+=("2025-12-24.json")
 
 #********
 

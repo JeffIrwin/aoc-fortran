@@ -455,19 +455,19 @@ program main
 	! text format used here
 
 	select case (args%input_filename)
-	case ("easy-2025-12-28.txt")
+	case ("inputs/easy-2025-12-28.txt")
 		expect1 = ":5-6::6:|:3::5-33:|:2-24:"
 
-	case ("medium-2025-12-27.txt")
+	case ("inputs/medium-2025-12-27.txt")
 		expect1 = ":3-01-3::5-516-542-0:||:21:"
-	case ("medium-2025-12-28.txt")
+	case ("inputs/medium-2025-12-28.txt")
 		expect1 = ":6:|:1-122-2::0-30-2::1-33-2:"
 
-	case ("hard-2025-12-26.txt")
+	case ("inputs/hard-2025-12-26.txt")
 		expect1 = ":5-51-2::6-33-2::5-3::1-3::13:||:43::53-00:||:11-00::6-6::0:|:6::6-4:"
-	case ("hard-2025-12-27.txt")
+	case ("inputs/hard-2025-12-27.txt")
 		expect1 = ":65:||:25::3333:||||:6512::6-02-5::4-04-1::52:||:11::::0:|:00:|:42:|:4:"
-	case ("hard-2025-12-28.txt")
+	case ("inputs/hard-2025-12-28.txt")
 		expect1 = ":54-51:||:66-11::45:||:02::0-56-2::044-4:||:22::2-2:"
 
 	case default

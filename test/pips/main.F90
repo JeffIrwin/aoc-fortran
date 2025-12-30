@@ -153,7 +153,7 @@ function part1(args) result(ans_)
 	close(iu)
 	call print_mat_i32("ds (transpose) = ", ds)
 
-	! Sort dominos by the sum of each tile. This optimization makes the search
+	! Sort dominoes by the sum of each tile. This optimization makes the search
 	! run >10x faster (from 1+ min on laptop battery for hard problem down to <2
 	! sec)
 

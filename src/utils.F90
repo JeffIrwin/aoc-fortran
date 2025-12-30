@@ -403,7 +403,7 @@ subroutine print_mat_f32(msg, a)
 	write(unit_, "(a)") " " // msg
 	do i = 1, m
 		do j = 1, n
-			write(*, "(es11.3)", advance = "no") a(i,j)
+			write(unit_, "(es11.3)", advance = "no") a(i,j)
 		end do
 		write(unit_, *)
 	end do
@@ -428,7 +428,7 @@ subroutine print_mat_bool(msg, a)
 	write(unit_, "(a)") " " // msg
 	do i = 1, m
 		do j = 1, n
-			write(*, "(l)", advance = "no") a(i,j)
+			write(unit_, "(l)", advance = "no") a(i,j)
 		end do
 		write(unit_, *)
 	end do
@@ -453,7 +453,7 @@ subroutine print_mat_i32(msg, a)
 	write(unit_, "(a)") " " // msg
 	do i = 1, m
 		do j = 1, n
-			write(*, "(i6)", advance = "no") a(i,j)
+			write(unit_, "(i6)", advance = "no") a(i,j)
 		end do
 		write(unit_, *)
 	end do
@@ -485,7 +485,7 @@ subroutine print_mat_i64(msg, a, width)
 	write(unit_, "(a)") " " // msg
 	do i = 1, m
 		do j = 1, n
-			write(*, "(i"//to_str(width_)//")", advance = "no") a(i,j)
+			write(unit_, "(i"//to_str(width_)//")", advance = "no") a(i,j)
 		end do
 		write(unit_, *)
 	end do
@@ -517,7 +517,7 @@ subroutine print_mat_char(msg, a, transpose_)
 		do i = 1, m
 			! TODO: unroll inner loops for all print_mat*() fns
 			do j = 1, n
-				write(*, "(a)", advance = "no") a(i,j)
+				write(unit_, "(a)", advance = "no") a(i,j)
 			end do
 			write(unit_, *)
 		end do
@@ -526,7 +526,7 @@ subroutine print_mat_char(msg, a, transpose_)
 
 	do j = 1, n
 		do i = 1, m
-			write(*, "(a)", advance = "no") a(i,j)
+			write(unit_, "(a)", advance = "no") a(i,j)
 		end do
 		write(unit_, *)
 	end do
@@ -548,10 +548,8 @@ function mat_char_to_str(a, delim) result(str)
 	str = "" ! TODO: pre-allocate
 	do j = 1, n
 		do i = 1, m
-			!write(*, "(a)", advance = "no") a(i,j)
 			str = str // a(i,j)
 		end do
-		!write(unit_, *)
 		str = str // delim
 	end do
 

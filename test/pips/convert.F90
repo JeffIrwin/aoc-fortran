@@ -154,10 +154,19 @@ end function read_pips_json
 subroutine convert(input_filename, output_filename)
 	character(len=*), intent(in) :: input_filename, output_filename
 	!********
-	!pips = read_pips_json(input_filename)
-	call write_pips_text("easy-"//output_filename, read_pips_json(input_filename, "easy"))
-	call write_pips_text("medium-"//output_filename, read_pips_json(input_filename, "medium"))
-	call write_pips_text("hard-"//output_filename, read_pips_json(input_filename, "hard"))
+	character(len=:), allocatable :: d
+	integer :: i
+	type(str_vec_t) :: difficulties
+
+	difficulties = new_str_vec()
+	call difficulties%push("easy")
+	call difficulties%push("medium")
+	call difficulties%push("hard")
+
+	do i = 1, i32(difficulties%len)
+		d = difficulties%vec(i)%str
+		call write_pips_text(d//"-"//output_filename, read_pips_json(input_filename, d))
+	end do
 
 end subroutine convert
 

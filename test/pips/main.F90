@@ -4,11 +4,18 @@ module aoc_m
 	use aoc_all_m
 	implicit none
 
-	! Global variables. TODO: package these immutable vars into a pips_t game
-	! struct
-	character, allocatable :: cg(:,:), rl(:), rt(:)
-	integer :: nx, ny, nr, nd
-	integer, allocatable :: rv(:)
+	!! Global variables
+	!character, allocatable :: cg(:,:), rl(:), rt(:)
+	!integer :: nx, ny, nr, nd
+	!integer, allocatable :: rv(:)
+
+	type pips_t
+		! Pips game input data
+		character, allocatable :: cg(:,:), rl(:), rt(:)
+		integer :: nx, ny, nr, nd
+		integer, allocatable :: rv(:)
+		integer, allocatable :: ds(:,:)
+	end type pips_t
 
 	logical :: has_sln  ! shared mutable thread control. dangerous!
 
@@ -25,17 +32,18 @@ function part1(args) result(ans_)
 	character(len = :), allocatable :: filename, str_, ans1, ans2
 	integer :: i, iu, io, x, y
 	integer, allocatable :: ig(:,:), idx1(:), idx2(:)
-	integer, allocatable :: ds(:,:), ds1(:,:), ds2(:,:)
+	integer, allocatable :: ds1(:,:), ds2(:,:)
 	integer(kind=8) :: sum_
 	logical :: is_solvable1, is_solvable2
 	logical, allocatable :: has_horz(:,:), has_vert(:,:)
+	type(pips_t) :: p
 
 	sum_ = 0
 
 	! First pass: count the number of rows `ny`, regions `nr`, and dominoes `nd`
-	ny = 0
-	nr = 0
-	nd = 0
+	p%ny = 0
+	p%nr = 0
+	p%nd = 0
 	filename = args%input_filename
 	open(newunit = iu, file = filename, action = "read")
 	i = 1
@@ -51,69 +59,69 @@ function part1(args) result(ans_)
 		end if
 
 		if (i == 1) then
-			ny = ny + 1
+			p%ny = p%ny + 1
 		else if (i == 2) then
-			nr = nr + 1
+			p%nr = p%nr + 1
 		else if (i == 3) then
-			nd = nd + 1
+			p%nd = p%nd + 1
 		else
 			call panic("bad input -- too many blank lines")
 		end if
 
 	end do
-	print *, "ny, nr, nd = ", ny, nr, nd
+	print *, "ny, nr, nd = ", p%ny, p%nr, p%nd
 	rewind(iu)
 
 	! Read the board
 	str_ = read_line(iu, io)
-	nx = len(str_)
-	allocate(cg(nx, ny))
-	cg = "."
-	do y = 1, ny
-		do x = 1, nx
-			cg(x,y) = str_(x:x)
+	p%nx = len(str_)
+	allocate(p%cg(p%nx, p%ny))
+	p%cg = "."
+	do y = 1, p%ny
+		do x = 1, p%nx
+			p%cg(x,y) = str_(x:x)
 		end do
 
 		str_ = read_line(iu, io)
 	end do
-	print *, "nx = ", nx
-	call print_mat_char("cg = ", cg)
+	print *, "nx = ", p%nx
+	call print_mat_char("cg = ", p%cg)
 
 	! Read the region constraints, including labels `rl`, types `rt`, and values
 	! `rv`
-	allocate(rl(nr), rt(nr), rv(nr))
-	rt = "."  ! default type: sum equal to given digit
-	rv = -1
-	do i = 1, nr
+	allocate(p%rl(p%nr), p%rt(p%nr), p%rv(p%nr))
+	p%rt = "."  ! default type: sum equal to given digit
+	p%rv = -1
+	do i = 1, p%nr
 		str_ = read_line(iu, io)
 		!print *, "str_ = ", str_
 
-		rl(i) = str_(1:1)  ! label: a-z
-		if (.not. any(cg == rl(i))) then
-			call panic('constraint region "'//rl(i)//'" does not exist on input board')
+		p%rl(i) = str_(1:1)  ! label: a-z
+		if (.not. any(p%cg == p%rl(i))) then
+			call panic('constraint region "'//p%rl(i)//'" does not exist on input board')
 		end if
 
 		c = str_(4:4)
 		if (is_digit(c)) then
 			! Default type
-			rv(i) = read_i32(str_(4:))
+			p%rv(i) = read_i32(str_(4:))
 
 		else if (c == ">") then
-			rt(i) = c
-			rv(i) = read_i32(str_(5:))
+			p%rt(i) = c
+			p%rv(i) = read_i32(str_(5:))
 
 		else if (c == "<") then
-			rt(i) = c
-			rv(i) = read_i32(str_(5:))
+			p%rt(i) = c
+			p%rv(i) = read_i32(str_(5:))
 
 		else if (c == "=") then
-			rt(i) = c  ! no value for this type
+			p%rt(i) = c  ! no value for this type
 			if (str_(4:) /= "=") then
 				call panic('end-of-line junk found: "'//str_(4:)//'"')
 			end if
 
 		else if (c == "!") then
-			rt(i) = c
+			p%rt(i) = c
 			if (str_(4:) /= "!=") then
 				call panic('end-of-line junk found: "'//str_(4:)//'"')
 			end if
@@ -125,9 +133,9 @@ function part1(args) result(ans_)
 	end do
 	str_ = read_line(iu, io)  ! skip blank line
 
-	print "(a,"//to_str(nr)//"a3)", " rl = ", rl
-	print "(a,"//to_str(nr)//"a3)", " rt = ", rt
-	print "(a,"//to_str(nr)//"i3)", " rv = ", rv
+	print "(a,"//to_str(p%nr)//"a3)", " rl = ", p%rl
+	print "(a,"//to_str(p%nr)//"a3)", " rt = ", p%rt
+	print "(a,"//to_str(p%nr)//"i3)", " rv = ", p%rv
 
 	! TODO: more input sanity checks:
 	! - no region rules for "*" or ".", maybe even alphabetic only?
@@ -137,21 +145,21 @@ function part1(args) result(ans_)
 	! - allow comments?
 
 	! Sanity check on total area
-	if (2 * nd < count(cg /= ".")) then
+	if (2 * p%nd < count(p%cg /= ".")) then
 		call panic("too few dominoes to cover board")
-	else if (2 * nd > count(cg /= ".")) then
+	else if (2 * p%nd > count(p%cg /= ".")) then
 		call panic("too many dominoes to fit in board")
 	end if
 
 	! Read the dominoes
-	ds = zeros_i32(2, nd)
-	do i = 1, nd
+	p%ds = zeros_i32(2, p%nd)
+	do i = 1, p%nd
 		str_ = read_line(iu, io)
 		!print *, "str_ = ", str_
-		ds(:,i) = read_i32_delims(str_, ", ")
+		p%ds(:,i) = read_i32_delims(str_, ", ")
 	end do
 	close(iu)
-	call print_mat_i32("ds (transpose) = ", ds)
+	call print_mat_i32("ds (transpose) = ", p%ds)
 
 	! Sort dominoes by the sum of each tile. This optimization makes the search
 	! run >10x faster (from 1+ min on laptop battery for hard problem down to <2
@@ -166,19 +174,17 @@ function part1(args) result(ans_)
 	! finish at least one thread quickly (<1s) and then the other thread could
 	! stop.  Random unsorted permutations could be added in more threads but I
 	! don't see the need unless there are problems that take longer
-	idx1 = sort_index(sum(ds,1))
+	idx1 = sort_index(sum(p%ds,1))
 	idx2 = reverse(idx1)
-	ds1 = ds(:, idx1)
-	ds2 = ds(:, idx2)
+	ds1 = p%ds(:, idx1)
+	ds2 = p%ds(:, idx2)
 
-	call print_mat_i32("ds (transpose) = ", ds)
-
-	ig = -ones_i32(nx, ny)  ! initialize empty spots as -1
-	has_horz = falses(nx,ny)
-	has_vert = falses(nx,ny)
-	do y = 1, ny
-	do x = 1, nx
-		if (cg(x,y) == ".") ig(x,y) = -2  ! mark the outside locations "." with -2
+	ig = -ones_i32(p%nx, p%ny)  ! initialize empty spots as -1
+	has_horz = falses(p%nx, p%ny)
+	has_vert = falses(p%nx, p%ny)
+	do y = 1, p%ny
+	do x = 1, p%nx
+		if (p%cg(x,y) == ".") ig(x,y) = -2  ! mark the outside locations "." with -2
 	end do
 	end do
 	!call print_mat_i32("ig (init) = ", transpose(ig))
@@ -190,13 +196,13 @@ function part1(args) result(ans_)
 !$omp sections
 
 !$omp section
-	is_solvable1 = search(ds1, ig, 1, has_horz, has_vert, ans1)
+	is_solvable1 = search(p, ds1, ig, 1, has_horz, has_vert, ans1)
 	has_sln = has_sln .or. is_solvable1  ! careful re race conditions!
 	!print *, "ans1 = ", ans1
 	!print *, "section 1 done"
 
 !$omp section
-	is_solvable2 = search(ds2, ig, 1, has_horz, has_vert, ans2)
+	is_solvable2 = search(p, ds2, ig, 1, has_horz, has_vert, ans2)
 	has_sln = has_sln .or. is_solvable2
 	!print *, "ans2 = ", ans2
 	!print *, "section 2 done"
@@ -215,12 +221,13 @@ end function part1
 
 !===============================================================================
 
-recursive logical function search(ds, ig, id, has_horz, has_vert, sln) result(ans)
+recursive logical function search(p, ds, ig, id, has_horz, has_vert, sln) result(ans)
 	! Pack the domino `id` into integer grid `ig`, return false if it violates
 	! geometric or numeric constraints. Solution string `sln` is returned as
 	! out-arg
 
 	use utils_m  ! should be unnecessary but linter is mad
+	type(pips_t), intent(in) :: p
 	integer, intent(in) :: ds(:,:)
 	integer, intent(inout) :: ig(:,:)
 	integer, intent(in) :: id
@@ -250,10 +257,10 @@ recursive logical function search(ds, ig, id, has_horz, has_vert, sln) result(an
 		! square came from
 
 		! Double size to also print horizontal/vertical domino connections
-		allocate(g(2*nx, 2*ny))
+		allocate(g(2*p%nx, 2*p%ny))
 		g = " "
-		do y = 1, ny
-		do x = 1, nx
+		do y = 1, p%ny
+		do x = 1, p%nx
 			if (ig(x,y) >= 0) g(2*x, 2*y) = to_str(ig(x,y))
 			if (has_horz(x,y)) g(2*x+1, 2*y) = "-"
 			if (has_vert(x,y)) g(2*x, 2*y+1) = "|"
@@ -271,8 +278,8 @@ recursive logical function search(ds, ig, id, has_horz, has_vert, sln) result(an
 	! Place the current domino `id` in every possible position and orientation
 	! (transformation)
 	ans = .false.
-	do y0 = 1, ny
-	do x0 = 1, nx
+	do y0 = 1, p%ny
+	do x0 = 1, p%nx
 	do t = 1, 4
 		d = trans_(ds(:,id), t)
 		ndx = size(d,1)
@@ -280,8 +287,8 @@ recursive logical function search(ds, ig, id, has_horz, has_vert, sln) result(an
 		!print *, "x0, y0, size(d) = ", x0, y0, ndx, ndy
 
 		! Check bounds
-		if (x0 + ndx > nx+1) cycle
-		if (y0 + ndy > ny+1) cycle
+		if (x0 + ndx > p%nx+1) cycle
+		if (y0 + ndy > p%ny+1) cycle
 
 		! Check if domino position is unoccupied
 		can_pack = all(ig(x0: x0+ndx-1, y0: y0+ndy-1) == -1) ! TODO: magic numbers/chars
@@ -303,9 +310,9 @@ recursive logical function search(ds, ig, id, has_horz, has_vert, sln) result(an
 		sums_max = 0
 		is_complete = .true.
 		nvals = 0
-		do y = 1, ny
-		do x = 1, nx
-			c = cg(x,y)
+		do y = 1, p%ny
+		do x = 1, p%nx
+			c = p%cg(x,y)
 			if (c == "*") cycle  ! wildcard, free square
 			ic = ichar(c)
 			if (igl(x,y) < 0) then
@@ -323,27 +330,27 @@ recursive logical function search(ds, ig, id, has_horz, has_vert, sln) result(an
 
 		can_pack = .true.
 		!print *, "sums = "
-		do i = 1, nr
-			ic = ichar(rl(i))
+		do i = 1, p%nr
+			ic = ichar(p%rl(i))
 			!print *, rl(i), ": ", to_str(sums(ic))
-			!print *, "rt = ", rt(i)
+			!print *, "rt = ", p%rt(i)
 			!print *, "is_complete = ", is_complete(ic)
 
-			select case (rt(i))
+			select case (p%rt(i))
 			case (".")
 				if (is_complete(ic)) then
-					can_pack = sums(ic) == rv(i)
+					can_pack = sums(ic) == p%rv(i)
 				else
-					can_pack = sums(ic) <= rv(i) .and. sums_max(ic) >= rv(i)
+					can_pack = sums(ic) <= p%rv(i) .and. sums_max(ic) >= p%rv(i)
 				end if
 			case (">")
 				if (is_complete(ic)) then
-					can_pack = sums(ic) > rv(i)
+					can_pack = sums(ic) > p%rv(i)
 				else
-					can_pack = sums_max(ic) > rv(i)
+					can_pack = sums_max(ic) > p%rv(i)
 				end if
 			case ("<")
-				can_pack = sums(ic) < rv(i)
+				can_pack = sums(ic) < p%rv(i)
 			case ("=")
 				can_pack = all_eq(vals(1: nvals(ic), ic))
 			case ("!")
@@ -356,7 +363,7 @@ recursive logical function search(ds, ig, id, has_horz, has_vert, sln) result(an
 		if (.not. can_pack) cycle
 		!call print_mat_i32("igl (wip) = ", transpose(igl))
 
-		if (search(ds, igl, id+1, has_horzl, has_vertl, sln)) then
+		if (search(p, ds, igl, id+1, has_horzl, has_vertl, sln)) then
 			ans = .true.
 			return
 		end if

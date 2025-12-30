@@ -8,4 +8,5 @@ scratch/
 *.a
 *.o
 main
+converter
 

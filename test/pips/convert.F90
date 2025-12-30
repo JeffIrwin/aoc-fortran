@@ -1,6 +1,7 @@
 
 module convert_m
 
+	use aoc_all_m
 	use json_module
 	implicit none
 
@@ -14,38 +15,23 @@ module convert_m
 
 contains
 
-subroutine json_hello_world()
-	type(json_file) :: json
-
-	call json%deserialize('{"name": "Leonidas"}')
-
-	!print *, "json.name = ", json%get("name")
-	call json%print()
-
-end subroutine json_hello_world
-
-subroutine convert(input_filename, output_filename)
-	use utils_m
-	character(len=*), intent(in) :: input_filename, output_filename
+function read_pips_json(filename, difficulty) result(p)
+	character(len=*), intent(in) :: filename, difficulty
+	type(pips_t) :: p
 	!********
 	integer :: nr, nd, ni, ir, jr, nx, ny, x, y, ii, id
 	type(json_file) :: json
 	character :: c
 	character(len=:), allocatable :: rkey, ikey, dkey, type_
-	type(pips_t) :: p
 
-	call json%load(input_filename)
+	call json%load(filename)
 
 	!call json%print()
-	!call json%
-
-	! TODO: refactor as a subroutine to share with easy, medium, and hard
-	! puzzles all in one input json
 
 	nx = -huge(nx)
 	ny = -huge(ny)
 
-	call json%info("easy.regions", n_children = nr)
+	call json%info(difficulty//".regions", n_children = nr)
 	print *, "nr = ", nr
 
 	! Read the region constraints, including labels `rl`, types `rt`, and values
@@ -60,7 +46,7 @@ subroutine convert(input_filename, output_filename)
 	do ir = 1, nr
 		! Iterate over all regions, including empty ones
 
-		rkey = "easy.regions["//to_str(ir)//"]"
+		rkey = difficulty//".regions["//to_str(ir)//"]"
 		print *, "rkey = ", rkey
 
 		call json%get(rkey//".type", type_)
@@ -122,7 +108,7 @@ subroutine convert(input_filename, output_filename)
 	! Second pass: save the grid
 	jr = 0  ! non-empty region counter
 	do ir = 1, nr
-		rkey = "easy.regions["//to_str(ir)//"]"
+		rkey = difficulty//".regions["//to_str(ir)//"]"
 		call json%get(rkey//".type", type_)
 		if (type_ == "empty") then
 			c = "*"
@@ -149,11 +135,11 @@ subroutine convert(input_filename, output_filename)
 	call print_mat_char("cg = ", p%cg)
 
 	! Parse the dominoes
-	call json%info("easy.dominoes", n_children = nd)
+	call json%info(difficulty//".dominoes", n_children = nd)
 	print *, "nd = ", nd
 	allocate(p%ds(2, nd))
 	do id = 1, nd
-		dkey = "easy.dominoes["//to_str(id)//"]"
+		dkey = difficulty//".dominoes["//to_str(id)//"]"
 		call json%get(dkey//"[1]", p%ds(1, id))
 		call json%get(dkey//"[2]", p%ds(2, id))
 	end do
@@ -163,7 +149,15 @@ subroutine convert(input_filename, output_filename)
 	! TODO: check json errors and print message, or set it to stop on error (if
 	! that also makes it print by default)
 
-	call write_pips_text(output_filename, p)
+end function read_pips_json
+
+subroutine convert(input_filename, output_filename)
+	character(len=*), intent(in) :: input_filename, output_filename
+	!********
+	!pips = read_pips_json(input_filename)
+	call write_pips_text("easy-"//output_filename, read_pips_json(input_filename, "easy"))
+	call write_pips_text("medium-"//output_filename, read_pips_json(input_filename, "medium"))
+	call write_pips_text("hard-"//output_filename, read_pips_json(input_filename, "hard"))
 
 end subroutine convert
 
@@ -218,8 +212,6 @@ program main
 	character :: buffer*1024
 
 	print *, "Starting convert main"
-
-	call json_hello_world()
 
 	call get_command_argument(1, value = buffer)!, status = io) ! TODO: just use args.F90
 	input_filename = trim(buffer)

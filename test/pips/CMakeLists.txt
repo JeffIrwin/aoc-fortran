@@ -15,9 +15,7 @@ set(CONV_SRCS
 set(LIB_DIR "${CMAKE_SOURCE_DIR}/../../src")
 set(LIB_BUILD_DIR "${LIB_DIR}/build/${CMAKE_BUILD_TYPE}")
 add_subdirectory(${LIB_DIR} ${LIB_BUILD_DIR})
-
-add_subdirectory(../../json-fortran/ ${CMAKE_SOURCE_DIR}/../../json-fortran/build)
-#add_subdirectory(../../json-fortran/ ${LIB_BUILD_DIR})  # can't share build dir for two different source dirs
+add_subdirectory(../../json-fortran/ ${CMAKE_SOURCE_DIR}/../../json-fortran/build/${CMAKE_BUILD_TYPE})
 
 include(../../template/flags.cmake)
 

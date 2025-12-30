@@ -8,6 +8,10 @@ project(${PROJECT} Fortran)
 set(SRCS
 	main.F90
 )
+
+# The convert program is a bit obsolete now that the solver can just read JSON
+# directly.  However, it's nice to be able to split easy, medium, and hard from
+# one JSON into three separate text files
 set(CONV_SRCS
 	convert.F90
 )

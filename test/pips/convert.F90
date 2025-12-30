@@ -24,15 +24,23 @@ function read_pips_json(filename, difficulty) result(p)
 	character :: c
 	character(len=:), allocatable :: rkey, ikey, dkey, type_
 
-	call json%load(filename)
+	write(*,*) 'Reading pips JSON file "'//filename//'" '//difficulty//' difficulty ...'
+	select case (difficulty)
+	case ("easy", "medium", "hard")
+	case default
+		call panic('bad difficulty "'//difficulty//'"')
+	end select
 
+	!call json%initialize(stop_on_error = .true., verbose = .true.)
+	call json%initialize(stop_on_error = .true.)
+	call json%load(filename)
 	!call json%print()
 
 	nx = -huge(nx)
 	ny = -huge(ny)
 
 	call json%info(difficulty//".regions", n_children = nr)
-	print *, "nr = ", nr
+	!print *, "nr = ", nr
 
 	! Read the region constraints, including labels `rl`, types `rt`, and values
 	! `rv`. JSON does not provide labels, so make them here named "A", "B", "C",
@@ -47,10 +55,10 @@ function read_pips_json(filename, difficulty) result(p)
 		! Iterate over all regions, including empty ones
 
 		rkey = difficulty//".regions["//to_str(ir)//"]"
-		print *, "rkey = ", rkey
+		!print *, "rkey = ", rkey
 
 		call json%get(rkey//".type", type_)
-		print *, "type_ = ", type_
+		!print *, "type_ = ", type_
 		if (type_ /= "empty") then
 			jr = jr + 1
 			p%rl(jr) = char(ichar("A") + jr - 1)
@@ -76,14 +84,14 @@ function read_pips_json(filename, difficulty) result(p)
 		end select
 
 		call json%info(rkey//".indices", n_children = ni)
-		print *, "ni = ", ni
+		!print *, "ni = ", ni
 
 		do ii = 1, ni
 			! Iterate over indices
 			ikey = rkey//".indices["//to_str(ii)//"]"
 			call json%get(ikey//"[1]", x)
 			call json%get(ikey//"[2]", y)
-			print *, "x, y = ", x, y
+			!print *, "x, y = ", x, y
 
 			nx = max(nx, x)
 			ny = max(ny, y)
@@ -91,7 +99,7 @@ function read_pips_json(filename, difficulty) result(p)
 	end do
 	nx = nx + 1  ! convert 0-index to 1-index
 	ny = ny + 1
-	print *, "nx, ny = ", nx, ny
+	!print *, "nx, ny = ", nx, ny
 	!print *, "rt = ", p%rt
 	allocate(p%cg(nx, ny))
 	p%cg = "."
@@ -101,9 +109,9 @@ function read_pips_json(filename, difficulty) result(p)
 	p%rt = p%rt(1: p%nr)
 	p%rv = p%rv(1: p%nr)
 
-	print "(a,"//to_str(nr)//"a3)", " rl = ", p%rl
-	print "(a,"//to_str(nr)//"a3)", " rt = ", p%rt
-	print "(a,"//to_str(nr)//"i3)", " rv = ", p%rv
+	!print "(a,"//to_str(nr)//"a3)", " rl = ", p%rl
+	!print "(a,"//to_str(nr)//"a3)", " rt = ", p%rt
+	!print "(a,"//to_str(nr)//"i3)", " rv = ", p%rv
 
 	! Second pass: save the grid
 	jr = 0  ! non-empty region counter
@@ -132,11 +140,11 @@ function read_pips_json(filename, difficulty) result(p)
 	p%nx = ny
 	p%ny = nx
 
-	call print_mat_char("cg = ", p%cg)
+	!call print_mat_char("cg = ", p%cg)
 
 	! Parse the dominoes
 	call json%info(difficulty//".dominoes", n_children = nd)
-	print *, "nd = ", nd
+	!print *, "nd = ", nd
 	allocate(p%ds(2, nd))
 	do id = 1, nd
 		dkey = difficulty//".dominoes["//to_str(id)//"]"
@@ -144,10 +152,7 @@ function read_pips_json(filename, difficulty) result(p)
 		call json%get(dkey//"[2]", p%ds(2, id))
 	end do
 	p%nd = nd
-	call print_mat_i32("ds (transpose) = ", p%ds)
-
-	! TODO: check json errors and print message, or set it to stop on error (if
-	! that also makes it print by default)
+	!call print_mat_i32("ds (transpose) = ", p%ds)
 
 end function read_pips_json
 
@@ -212,6 +217,7 @@ subroutine write_pips_text(filename, pips)
 
 	close(unit_)
 	write(*,*) 'Finished writing pips text file "'//filename//'"'
+	write(*,*)
 
 end subroutine write_pips_text
 

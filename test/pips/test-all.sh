@@ -21,14 +21,12 @@ release_tests+=("hard-2025-12-27.txt")  # aka "input.txt", slow!
 ndebug=0
 nrelease=0
 
-rm main || true
 ./run.sh -t debug  # run test just to build
 for test in "${debug_tests[@]}" ; do
 	time ./main -a -i inputs/"$test"
 	((ndebug++)) || true
 done
 
-rm main || true
 ./run.sh -t release  # run test just to build
 for test in "${release_tests[@]}" ; do
 	time ./main -a -i inputs/"$test"

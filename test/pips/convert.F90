@@ -165,6 +165,9 @@ subroutine convert(input_filename, output_filename)
 
 	do i = 1, i32(difficulties%len)
 		d = difficulties%vec(i)%str
+		! TODO: output filename doesn't work if it's in a subdir. Steal the
+		! path-splitting fn (from syntran?) to put the difficulty prefix after
+		! the dir but before the basename
 		call write_pips_text(d//"-"//output_filename, read_pips_json(input_filename, d))
 	end do
 
@@ -218,16 +221,14 @@ program main
 	use convert_m
 	implicit none
 	character(len=:), allocatable :: input_filename, output_filename
-	character :: buffer*1024
 
 	print *, "Starting convert main"
 
-	call get_command_argument(1, value = buffer)!, status = io) ! TODO: just use args.F90
-	input_filename = trim(buffer)
+	! TODO: check arg count, log help message
+	input_filename = get_arg(1)
 	print *, 'input_filename = "' // input_filename // '"'
 
-	call get_command_argument(2, value = buffer)!, status = io) ! TODO: just use args.F90
-	output_filename = trim(buffer)
+	output_filename = get_arg(2)
 	print *, 'output_filename = "' // output_filename // '"'
 
 	call convert(input_filename, output_filename)

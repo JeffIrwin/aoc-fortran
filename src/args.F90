@@ -13,17 +13,43 @@ module args_m
 			help               = .false., &
 			has_input_filename = .false.
 
-		character(len = :), allocatable :: input_filename
+		character(len=:), allocatable :: input_filename
 
 	end type args_t
 
 contains
 
+!===============================================================================
+
+function get_arg(i)
+	integer, intent(in) :: i
+	character(len=:), allocatable :: get_arg
+	!********
+	integer :: len_, io
+
+	call get_command_argument(i, length = len_, status = io)
+	if (io /= 0) then
+		call panic("can't get length of command argument index "//to_str(i))
+	end if
+	!print *, "arg "//to_str(i)//" len_ = ", len_
+
+	allocate(character(len = len_) :: get_arg)
+
+	call get_command_argument(i, value = get_arg, status = io)
+	if (io /= 0) then
+		call panic("can't get value of command argument index "//to_str(i))
+	end if
+	!print *, "arg "//to_str(i)//" = ", get_arg
+
+end function get_arg
+
+!===============================================================================
+
 function parse_args() result(args)
 	type(args_t) :: args
 	!********
-	character(len = :), allocatable :: arg
-	integer :: i, nargs, len_, io, ipos
+	character(len=:), allocatable :: arg
+	integer :: i, nargs, ipos
 	logical :: error = .false.
 	type(str_vec_t) :: argv
 
@@ -34,23 +60,7 @@ function parse_args() result(args)
 	nargs = command_argument_count()
 	argv = new_str_vec()
 	do i = 1, nargs
-
-		call get_command_argument(i, length = len_, status = io)
-		if (io /= 0) then
-			call panic("can't get length of command argument index "//to_str(i))
-		end if
-		!print *, "arg "//to_str(i)//" len_ = ", len_
-
-		allocate(character(len = len_) :: arg)
-
-		call get_command_argument(i, value = arg, status = io)
-		if (io /= 0) then
-			call panic("can't get value of command argument index "//to_str(i))
-		end if
-		!print *, "arg "//to_str(i)//" = ", arg
-
-		call argv%push(arg)
-		deallocate(arg)
+		call argv%push(get_arg(i))
 	end do
 	!call print_str_vec("argv = ", argv)
 
@@ -120,6 +130,8 @@ function parse_args() result(args)
 	end if
 
 end function parse_args
+
+!===============================================================================
 
 end module args_m
 

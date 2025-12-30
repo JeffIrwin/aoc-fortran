@@ -11,6 +11,8 @@ set(SRCS
 	map_i32.F90
 	map_i64.F90
 	map_str.F90
+	rand.F90
+	rng.F90
 	sort.F90
 	utils.F90
 )

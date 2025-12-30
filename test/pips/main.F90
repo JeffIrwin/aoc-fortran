@@ -450,10 +450,6 @@ program main
 	p1 = rm_char(p1, " ")
 	print *, "p1 = ", p1
 
-	! TODO: apparently the New York Times has a NYT API for downloading pips
-	! inputs in JSON format.  Maybe make a helper to convert JSON to my made up
-	! text format used here
-
 	select case (args%input_filename)
 	case ("inputs/easy-2025-12-28.txt")
 		expect1 = ":5-6::6:|:3::5-33:|:2-24:"

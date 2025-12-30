@@ -2,14 +2,14 @@
 cmake_minimum_required(VERSION 3.22)
 
 set(PROJECT "main")
-set(CONV "converter")
+set(CONV "convert")
 project(${PROJECT} Fortran)
 
 set(SRCS
 	main.F90
 )
 set(CONV_SRCS
-	converter.F90
+	convert.F90
 )
 
 set(LIB_DIR "${CMAKE_SOURCE_DIR}/../../src")

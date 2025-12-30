@@ -1,5 +1,5 @@
 
-module converter_m
+module convert_m
 
 	use json_module
 	implicit none
@@ -70,15 +70,15 @@ subroutine convert(input_filename, output_filename)
 
 end subroutine convert
 
-end module converter_m
+end module convert_m
 
 program main
-	use converter_m
+	use convert_m
 	implicit none
 	character(len=:), allocatable :: input_filename, output_filename
 	character :: buffer*1024
 
-	print *, "Starting converter main"
+	print *, "Starting convert main"
 
 	call json_hello_world()
 
@@ -92,6 +92,6 @@ program main
 
 	call convert(input_filename, output_filename)
 
-	print *, "Ending converter main"
+	print *, "Ending convert main"
 end program main
 

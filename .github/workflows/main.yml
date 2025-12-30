@@ -14,7 +14,6 @@ jobs:
       env:
         AOC_GPG_PASSPHRASE: ${{ secrets.AOC_GPG_PASSPHRASE }}
       run: |
-        git submodule sync --recursive
-        git submodule update --init --recursive
+        git submodule update --init --recursive --depth 1
         docker build . -t rocky --build-arg AOC_GPG_PASSPHRASE=$AOC_GPG_PASSPHRASE
 

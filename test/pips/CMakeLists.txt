@@ -7,6 +7,7 @@ project(${PROJECT} Fortran)
 
 set(SRCS
 	main.F90
+	pips_io.F90
 )
 
 # The convert program is a bit obsolete now that the solver can just read JSON
@@ -14,6 +15,7 @@ set(SRCS
 # one JSON into three separate text files
 set(CONV_SRCS
 	convert.F90
+	pips_io.F90
 )
 
 set(LIB_DIR "${CMAKE_SOURCE_DIR}/../../src")

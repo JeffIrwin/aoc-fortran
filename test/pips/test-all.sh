@@ -2,8 +2,6 @@
 
 set -exu
 
-# TODO: move inputs and screenshots to subdirs
-
 debug_tests=()
 debug_tests+=("easy-2025-12-28.txt")
 

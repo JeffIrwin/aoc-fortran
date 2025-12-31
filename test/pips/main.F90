@@ -8,6 +8,11 @@ module aoc_m
 	! TODO: can this be an inout arg? Not sure how OpenMP works
 	logical :: has_sln  ! shared mutable thread control. dangerous!
 
+	type mat_i32
+		! Wrapper class so each domino can have a different sized list of valid positions
+		integer, allocatable :: mat(:,:)
+	end type mat_i32
+
 contains
 
 !===============================================================================
@@ -64,11 +69,78 @@ function solve_pips(p) result(ans_)
 	character(len = :), allocatable :: ans_
 	!********
 	character(len = :), allocatable :: ans1, ans2
-	integer :: x, y
-	integer, allocatable :: ig(:,:), idx1(:), idx2(:)
+	integer :: x, y, x0, y0, t, id
+	integer :: ntot, ngeo, nvld  ! TODO: debug only
+	integer, allocatable :: ig(:,:), idx1(:), idx2(:), d(:,:), igl(:,:)
 	integer, allocatable :: ds1(:,:), ds2(:,:)
 	logical :: is_solvable1, is_solvable2
 	logical, allocatable :: has_horz(:,:), has_vert(:,:)
+	integer, allocatable :: np(:)
+	type(mat_i32), allocatable :: pos(:), pos1(:), pos2(:)
+
+	ig = -ones_i32(p%nx, p%ny)  ! initialize empty spots as -1
+	has_horz = falses(p%nx, p%ny)
+	has_vert = falses(p%nx, p%ny)
+	do y = 1, p%ny
+	do x = 1, p%nx
+		if (p%cg(x,y) == ".") ig(x,y) = -2  ! mark the outside locations "." with -2
+	end do
+	end do
+	!call print_mat_i32("ig (init) = ", transpose(ig))
+
+	! Before starting recursive search, make a pass where we use is_valid() to
+	! find all possible positions/orientations of each domino in isolation. A
+	! single domino by itself in isolation can violate numeric constraints, so
+	! this prunes down the search space
+	!
+	! I had something similar that I removed here:
+	!
+	!     https://github.com/JeffIrwin/aoc-fortran/commit/b2f07ccce84c746578ccdd0a683828cfcc48eb11
+	!
+	! That only checked geometric constraints.  Numeric constraints are more
+	! complicated because each domino will have different possibilities
+
+	allocate(pos( p%nd ))
+	np = zeros_i32(p%nd)
+	do id = 1, p%nd
+
+		allocate(pos(id)%mat( 3, 4*count(p%cg /= ".") ))  ! over-allocate
+
+		ntot = 0
+		ngeo = 0
+		nvld = 0
+		do y0 = 1, p%ny
+		do x0 = 1, p%nx
+		do t = 1, 4
+
+			ntot = ntot + 1
+			d = trans_(p%ds(:,id), t)
+			igl = ig  ! local copy
+
+			! TODO: delete after debugging
+			if (.not. is_valid(p, igl, d, x0, y0, geo_only = .true.)) cycle
+			ngeo = ngeo + 1
+			igl = ig  ! reset
+
+			if (.not. is_valid(p, igl, d, x0, y0, geo_only = .false.)) cycle
+			nvld = nvld + 1
+			np(id) = np(id) + 1
+
+			pos(id)%mat(:, np(id)) = [x0, y0, t]
+
+		end do
+		end do
+		end do
+
+		! The pos matrices could be fragmented it memory. Might be better to
+		! make one big matrix shared by all dominoes, along with a start/end
+		! index for each domino
+		pos(id)%mat = pos(id)%mat(:, 1: np(id))  ! trim
+
+		print *, "ntot, ngeo, nvld = ", ntot, ngeo, nvld
+		!call print_mat_i32("pos "//to_str(id)//" = ", pos(id)%mat)
+
+	end do
 
 	! Sort dominoes by the sum of each tile. This optimization makes the search
 	! run >10x faster (from 1+ min on laptop battery for hard problem down to <2
@@ -84,29 +156,19 @@ function solve_pips(p) result(ans_)
 	! stop.  Random unsorted permutations could be added in more threads but I
 	! don't see the need unless there are problems that take longer
 
-	! TODO: try sorting by min and/or max in ascending and/or descending order
-	! instead of by sum. Maybe also prioritize tiles matching single-square sum
-	! constraints towards end (or beginning?) of list
-
 	!idx1 = sort_index(sum(p%ds, 1))     ! 5m13s
 	!idx1 = sort_index(minval(p%ds, 1))  ! 5m52s
 	idx1 = sort_index(maxval(p%ds, 1))  ! 4m21s, 4m18s
+	!idx1 = sort_index(np)  ! TODO: much faster even without actually using sparse pos
 
 	idx2 = reverse(idx1)
 	ds1 = p%ds(:, idx1)
 	ds2 = p%ds(:, idx2)
+	pos1 = pos(idx1)
+	pos2 = pos(idx2)
 
 	call print_mat_i32("dominoes (sorted) = ", ds1)
-
-	ig = -ones_i32(p%nx, p%ny)  ! initialize empty spots as -1
-	has_horz = falses(p%nx, p%ny)
-	has_vert = falses(p%nx, p%ny)
-	do y = 1, p%ny
-	do x = 1, p%nx
-		if (p%cg(x,y) == ".") ig(x,y) = -2  ! mark the outside locations "." with -2
-	end do
-	end do
-	!call print_mat_i32("ig (init) = ", transpose(ig))
+	print *, "np  = ", np
 
 	write(*,*) "Searching for solution ..."
 	has_sln = .false.
@@ -115,13 +177,13 @@ function solve_pips(p) result(ans_)
 !$omp sections
 
 !$omp section
-	is_solvable1 = search(p, ds1, ig, 1, has_horz, has_vert, ans1)
+	is_solvable1 = search(p, ds1, pos1, ig, 1, has_horz, has_vert, ans1)
 	has_sln = has_sln .or. is_solvable1  ! careful re race conditions!
 	!print *, "ans1 = ", ans1
 	print *, "section 1 done"
 
 !$omp section
-	is_solvable2 = search(p, ds2, ig, 1, has_horz, has_vert, ans2)
+	is_solvable2 = search(p, ds2, pos2, ig, 1, has_horz, has_vert, ans2)
 	has_sln = has_sln .or. is_solvable2
 	!print *, "ans2 = ", ans2
 	print *, "section 2 done"
@@ -140,19 +202,20 @@ end function solve_pips
 
 !===============================================================================
 
-recursive logical function search(p, ds, ig, id, has_horz, has_vert, sln) result(ans)
+recursive logical function search(p, ds, pos, ig, id, has_horz, has_vert, sln) result(ans)
 	! Pack the domino `id` into integer grid `ig`, return false if it violates
 	! geometric or numeric constraints. Solution string `sln` is returned as
 	! out-arg
 	type(pips_t), intent(in) :: p
 	integer, intent(in) :: ds(:,:)
+	type(mat_i32), intent(in) :: pos(:)
 	integer, intent(inout) :: ig(:,:)
 	integer, intent(in) :: id
 	logical, intent(in) :: has_horz(:,:), has_vert(:,:)
 	character(len=:), allocatable :: sln
 	!********
 	character, allocatable :: g(:,:)
-	integer :: x0, y0, t, x, y
+	integer :: x0, y0, t, x, y, ip
 	integer, allocatable :: d(:,:), igl(:,:)
 	logical, allocatable :: has_horzl(:,:), has_vertl(:,:)
 
@@ -185,9 +248,11 @@ recursive logical function search(p, ds, ig, id, has_horz, has_vert, sln) result
 	! Place the current domino `id` in every possible position and orientation
 	! (transformation)
 	ans = .false.
-	do y0 = 1, p%ny
-	do x0 = 1, p%nx
-	do t = 1, 4
+	do ip = 1, size(pos(id)%mat,2)
+		x0 = pos(id)%mat(1, ip)
+		y0 = pos(id)%mat(2, ip)
+		t  = pos(id)%mat(3, ip)
+
 		if (has_sln) then
 			sln = ""
 			ans = .false.
@@ -196,7 +261,7 @@ recursive logical function search(p, ds, ig, id, has_horz, has_vert, sln) result
 
 		d = trans_(ds(:,id), t)
 		igl = ig  ! local copy
-		if (.not. is_valid(p, igl, d, x0, y0)) cycle
+		if (.not. is_valid(p, igl, d, x0, y0, geo_only = .false.)) cycle
 
 		has_horzl = has_horz
 		has_vertl = has_vert
@@ -206,22 +271,21 @@ recursive logical function search(p, ds, ig, id, has_horz, has_vert, sln) result
 			has_vertl(x0,y0) = .true.
 		end if
 
-		if (search(p, ds, igl, id+1, has_horzl, has_vertl, sln)) then
+		if (search(p, ds, pos, igl, id+1, has_horzl, has_vertl, sln)) then
 			ans = .true.
 			return
 		end if
-	end do
-	end do
 	end do
 
 end function search
 
 !===============================================================================
 
-logical function is_valid(p, igl, d, x0, y0)
+logical function is_valid(p, igl, d, x0, y0, geo_only)
 	type(pips_t), intent(in) :: p
 	integer, intent(inout) :: igl(:,:)
 	integer, intent(in) :: d(:,:), x0, y0
+	logical, intent(in) :: geo_only  ! TODO: debug only
 	!********
 	character :: c
 	integer :: i, ndx, ndy, x, y, ic
@@ -244,6 +308,11 @@ logical function is_valid(p, igl, d, x0, y0)
 	if (.not. can_pack) return
 
 	igl(x0: x0+ndx-1, y0: y0+ndy-1) = d
+
+	if (geo_only) then
+		is_valid = .true.
+		return
+	end if
 
 	! Check if the sums of each region satisfy the numeric constraints
 	sums = 0
@@ -393,11 +462,15 @@ program main
 
 	case ("inputs/easy-2025-12-28.txt")
 		expect1 = ":5-6::6:|:3::5-33:|:2-24:"
+	case ("inputs/easy-2025-12-30.txt")
+		expect1 = ":4:|:4-24::3-33-43:|:1:"
 
 	case ("inputs/medium-2025-12-27.txt")
 		expect1 = ":3-01-3::5-516-542-0:||:21:"
 	case ("inputs/medium-2025-12-28.txt")
 		expect1 = ":6:|:1-122-2::0-30-2::1-33-2:"
+	case ("inputs/medium-2025-12-30.txt")
+		expect1 = ":3-53:|:6-161:|:4-46-21::0-0:"
 
 	case ("inputs/hard-2025-12-26.txt")
 		expect1 = ":5-51-2::6-33-2::5-3::1-3::13:||:43::53-00:||:11-00::6-6::0:|:6::6-4:"
@@ -405,6 +478,8 @@ program main
 		expect1 = ":65:||:25::3333:||||:6512::6-02-5::4-04-1::52:||:11::::0:|:00:|:42:|:4:"
 	case ("inputs/hard-2025-12-28.txt")
 		expect1 = ":54-51:||:66-11::45:||:02::0-56-2::044-4:||:22::2-2:"
+	case ("inputs/hard-2025-12-30.txt")
+		expect1 = ":6-55-5::6455:||||:6013::633-3:||:42::02:||:02::4-2:"
 
 	case ("inputs/2025-12-24.json")
 		expect1 = ":0:|:2::24-6:|:66:|:1-33:;:1-30-4::010:|||:041::5-54-3:;:3-36-4::6444:||||:5203::2-33-0::1-5::10:||:25::1-6:;"

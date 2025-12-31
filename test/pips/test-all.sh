@@ -7,15 +7,18 @@ set -exu
 
 debug_tests=()
 debug_tests+=("easy-2025-12-28.txt")
+debug_tests+=("easy-2025-12-30.txt")
 
 debug_tests+=("medium-2025-12-27.txt")  # aka "test-input.txt"
 debug_tests+=("medium-2025-12-28.txt")
+debug_tests+=("medium-2025-12-30.txt")
 
 debug_tests+=("hard-2025-12-28.txt")
 
 release_tests=("${debug_tests[@]}")
 release_tests+=("hard-2025-12-26.txt")
 release_tests+=("hard-2025-12-27.txt")  # aka "input.txt"
+release_tests+=("hard-2025-12-30.txt")
 
 release_tests+=("2025-12-24.json")
 

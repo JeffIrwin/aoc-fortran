@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+# Run some tests with the "-a" arg to assert that their results match the
+# expected output
+
 set -exu
 
 debug_tests=()

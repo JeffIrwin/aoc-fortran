@@ -35,6 +35,7 @@ function do_pips(args) result(ans_)
 		do i = 1, i32(difficulties%len)
 			d = difficulties%vec(i)%str
 			p = read_pips_json(args%input_filename, d)
+			call print_pips(p)
 			ans_ = ans_ // solve_pips(p) // ";"
 		end do
 
@@ -43,6 +44,18 @@ function do_pips(args) result(ans_)
 	end if
 
 end function do_pips
+
+!===============================================================================
+
+subroutine print_pips(p)
+	type(pips_t), intent(in) :: p
+
+	write(*,*) "Number of dominoes = ", p%nd
+
+	call print_mat_i32("dominoes = ", p%ds)
+	write(*,*)
+
+end subroutine print_pips
 
 !===============================================================================
 
@@ -75,10 +88,15 @@ function solve_pips(p) result(ans_)
 	! instead of by sum. Maybe also prioritize tiles matching single-square sum
 	! constraints towards end (or beginning?) of list
 
-	idx1 = sort_index(sum(p%ds,1))
+	!idx1 = sort_index(sum(p%ds, 1))     ! 5m13s
+	!idx1 = sort_index(minval(p%ds, 1))  ! 5m52s
+	idx1 = sort_index(maxval(p%ds, 1))  ! 4m21s, 4m18s
+
 	idx2 = reverse(idx1)
 	ds1 = p%ds(:, idx1)
 	ds2 = p%ds(:, idx2)
+
+	call print_mat_i32("dominoes (sorted) = ", ds1)
 
 	ig = -ones_i32(p%nx, p%ny)  ! initialize empty spots as -1
 	has_horz = falses(p%nx, p%ny)
@@ -133,13 +151,9 @@ recursive logical function search(p, ds, ig, id, has_horz, has_vert, sln) result
 	logical, intent(in) :: has_horz(:,:), has_vert(:,:)
 	character(len=:), allocatable :: sln
 	!********
-	character :: c
 	character, allocatable :: g(:,:)
-	integer :: i, x0, y0, t, ndx, ndy, x, y, ic
-	integer :: sums(128), vals(32, 128), nvals(128), sums_max(128)
+	integer :: x0, y0, t, x, y
 	integer, allocatable :: d(:,:), igl(:,:)
-	logical :: can_pack = .true.
-	logical :: is_complete(128)  ! keys are ascii so arrays are size 128
 	logical, allocatable :: has_horzl(:,:), has_vertl(:,:)
 
 	if (id > size(ds,2)) then
@@ -181,86 +195,16 @@ recursive logical function search(p, ds, ig, id, has_horz, has_vert, sln) result
 		end if
 
 		d = trans_(ds(:,id), t)
-		ndx = size(d,1)
-		ndy = size(d,2)
-		!print *, "x0, y0, size(d) = ", x0, y0, ndx, ndy
-
-		! Check bounds
-		if (x0 + ndx > p%nx+1) cycle
-		if (y0 + ndy > p%ny+1) cycle
-
-		! Check if domino position is unoccupied
-		can_pack = all(ig(x0: x0+ndx-1, y0: y0+ndy-1) == -1) ! TODO: magic numbers/chars
-		if (.not. can_pack) cycle
-
 		igl = ig  ! local copy
-		igl(x0: x0+ndx-1, y0: y0+ndy-1) = d
+		if (.not. is_valid(p, igl, d, x0, y0)) cycle
 
 		has_horzl = has_horz
 		has_vertl = has_vert
-		if (ndx > 1) then
+		if (size(d,1) > 1) then
 			has_horzl(x0,y0) = .true.
 		else
 			has_vertl(x0,y0) = .true.
 		end if
-
-		! Check if the sums of each region satisfy the numeric constraints
-		sums = 0
-		sums_max = 0
-		is_complete = .true.
-		nvals = 0
-		do y = 1, p%ny
-		do x = 1, p%nx
-			c = p%cg(x,y)
-			if (c == "*") cycle  ! wildcard, free square
-			ic = ichar(c)
-			if (igl(x,y) < 0) then
-				sums_max(ic) = sums_max(ic) + 6  ! max possible sum if all remaining squares are 6
-				is_complete(ic) = .false.
-				cycle
-			end if
-			sums(ic) = sums(ic) + igl(x,y)
-			sums_max(ic) = sums_max(ic) + igl(x,y)
-			nvals(ic) = nvals(ic) + 1
-			vals(nvals(ic), ic) = igl(x,y)
-
-		end do
-		end do
-
-		can_pack = .true.
-		!print *, "sums = "
-		do i = 1, p%nr
-			ic = ichar(p%rl(i))
-			!print *, rl(i), ": ", to_str(sums(ic))
-			!print *, "rt = ", p%rt(i)
-			!print *, "is_complete = ", is_complete(ic)
-
-			select case (p%rt(i))
-			case (".")
-				if (is_complete(ic)) then
-					can_pack = sums(ic) == p%rv(i)
-				else
-					can_pack = sums(ic) <= p%rv(i) .and. sums_max(ic) >= p%rv(i)
-				end if
-			case (">")
-				if (is_complete(ic)) then
-					can_pack = sums(ic) > p%rv(i)
-				else
-					can_pack = sums_max(ic) > p%rv(i)
-				end if
-			case ("<")
-				can_pack = sums(ic) < p%rv(i)
-			case ("=")
-				can_pack = all_eq(vals(1: nvals(ic), ic))
-			case ("!")
-				can_pack = all_ne(vals(1: nvals(ic), ic))
-			case default
-				call panic("bad constraint type")
-			end select
-			if (.not. can_pack) exit
-		end do
-		if (.not. can_pack) cycle
-		!call print_mat_i32("igl (wip) = ", transpose(igl))
 
 		if (search(p, ds, igl, id+1, has_horzl, has_vertl, sln)) then
 			ans = .true.
@@ -271,6 +215,97 @@ recursive logical function search(p, ds, ig, id, has_horz, has_vert, sln) result
 	end do
 
 end function search
+
+!===============================================================================
+
+logical function is_valid(p, igl, d, x0, y0)
+	type(pips_t), intent(in) :: p
+	integer, intent(inout) :: igl(:,:)
+	integer, intent(in) :: d(:,:), x0, y0
+	!********
+	character :: c
+	integer :: i, ndx, ndy, x, y, ic
+	integer :: sums(128), vals(32, 128), nvals(128), sums_max(128)
+	logical :: can_pack = .true.
+	logical :: is_complete(128)  ! keys are ascii so arrays are size 128
+
+	is_valid = .false.
+
+	ndx = size(d,1)
+	ndy = size(d,2)
+	!print *, "x0, y0, size(d) = ", x0, y0, ndx, ndy
+
+	! Check bounds
+	if (x0 + ndx > p%nx+1) return
+	if (y0 + ndy > p%ny+1) return
+
+	! Check if domino position is unoccupied
+	can_pack = all(igl(x0: x0+ndx-1, y0: y0+ndy-1) == -1) ! TODO: magic numbers/chars
+	if (.not. can_pack) return
+
+	igl(x0: x0+ndx-1, y0: y0+ndy-1) = d
+
+	! Check if the sums of each region satisfy the numeric constraints
+	sums = 0
+	sums_max = 0
+	is_complete = .true.
+	nvals = 0
+	do y = 1, p%ny
+	do x = 1, p%nx
+		c = p%cg(x,y)
+		if (c == "*") cycle  ! wildcard, free square
+		ic = ichar(c)
+		if (igl(x,y) < 0) then
+			sums_max(ic) = sums_max(ic) + 6  ! max possible sum if all remaining squares are 6
+			is_complete(ic) = .false.
+			cycle
+		end if
+		sums(ic) = sums(ic) + igl(x,y)
+		sums_max(ic) = sums_max(ic) + igl(x,y)
+		nvals(ic) = nvals(ic) + 1
+		vals(nvals(ic), ic) = igl(x,y)
+
+	end do
+	end do
+
+	can_pack = .true.
+	!print *, "sums = "
+	do i = 1, p%nr
+		ic = ichar(p%rl(i))
+		!print *, rl(i), ": ", to_str(sums(ic))
+		!print *, "rt = ", p%rt(i)
+		!print *, "is_complete = ", is_complete(ic)
+
+		select case (p%rt(i))
+		case (".")
+			if (is_complete(ic)) then
+				can_pack = sums(ic) == p%rv(i)
+			else
+				can_pack = sums(ic) <= p%rv(i) .and. sums_max(ic) >= p%rv(i)
+			end if
+		case (">")
+			if (is_complete(ic)) then
+				can_pack = sums(ic) > p%rv(i)
+			else
+				can_pack = sums_max(ic) > p%rv(i)
+			end if
+		case ("<")
+			can_pack = sums(ic) < p%rv(i)
+		case ("=")
+			can_pack = all_eq(vals(1: nvals(ic), ic))
+		case ("!")
+			can_pack = all_ne(vals(1: nvals(ic), ic))
+		case default
+			call panic("bad constraint type")
+		end select
+		if (.not. can_pack) exit
+	end do
+	if (.not. can_pack) return
+	!call print_mat_i32("igl (wip) = ", transpose(igl))
+
+	is_valid = .true.
+
+end function is_valid
 
 !===============================================================================
 

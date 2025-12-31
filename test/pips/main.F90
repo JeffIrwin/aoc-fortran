@@ -5,6 +5,9 @@ module aoc_m
 	use pips_io_m
 	implicit none
 
+	! TODO: can this be an inout arg? Not sure how OpenMP works
+	logical :: has_sln  ! shared mutable thread control. dangerous!
+
 	type mat_i32
 		! Wrapper class so each domino can have a different sized list of valid positions
 		integer, allocatable :: mat(:,:)
@@ -65,13 +68,14 @@ function solve_pips(p) result(ans_)
 	type(pips_t), intent(in) :: p
 	character(len = :), allocatable :: ans_
 	!********
+	character(len = :), allocatable :: ans1, ans2
 	integer :: x, y, x0, y0, t, id, i, nmatch, nnomatch
-	integer, allocatable :: ig(:,:), ds(:,:), idx(:), d(:,:), igl(:,:), rn(:), &
+	integer, allocatable :: ig(:,:), ds1(:,:), ds2(:,:), idx1(:), idx2(:), d(:,:), igl(:,:), rn(:), &
 		navail(:), imatch(:), inomatch(:)
-	logical :: is_solvable, match
+	logical :: is_solvable, is_solvable1, is_solvable2, match
 	logical, allocatable :: has_horz(:,:), has_vert(:,:)
 	integer, allocatable :: np(:)
-	type(mat_i32), allocatable :: pos(:)
+	type(mat_i32), allocatable :: pos(:), pos1(:), pos2(:)
 
 	ig = -ones_i32(p%nx, p%ny)  ! initialize empty spots as -1
 	has_horz = falses(p%nx, p%ny)
@@ -142,63 +146,90 @@ function solve_pips(p) result(ans_)
 	! the search run >>10x faster (from 1+ min on laptop battery for hard
 	! problem down to <2 sec)
 
-	! TODO: 2025-10-28 is hard, I think we still need special handling for
-	! single-square sum constraints as this might prune down that particular
-	! problem. Might want to go back to something like the `navail` technique:
-	!
-	!     https://github.com/JeffIrwin/aoc-fortran/commit/2c6d8d41f9a22fff841a82015c920fc84fd41bc0
+	idx1 = sort_index(np)
+	idx2 = reverse(idx1)
+	ds1 = p%ds(:, idx1)
+	ds2 = p%ds(:, idx2)
+	pos1 = pos(idx1)
+	pos2 = pos(idx2)
 
-	idx = sort_index(np)
-	ds = p%ds(:, idx)
-	pos = pos(idx)
+	!! Put any dominoes matching single-square sum constraints at the front
+	!! (end?) of the list
+	!!
+	!! TODO: delete
+	!nmatch = 0
+	!nnomatch = 0
+	!imatch   = zeros_i32(p%nd)
+	!inomatch = zeros_i32(p%nd)
+	!do id = 1, p%nd
+	!	!print *, "domino = ", ds(:,id)
+	!	match = .false.
+	!	do i = 1, p%nr
+	!		if (rn(i) /= 1) cycle
 
-	! Put any dominoes matching single-square sum constraints at the front
-	! (end?) of the list
-	nmatch = 0
-	nnomatch = 0
-	imatch   = zeros_i32(p%nd)
-	inomatch = zeros_i32(p%nd)
-	do id = 1, p%nd
-		print *, "domino = ", ds(:,id)
-		match = .false.
-		do i = 1, p%nr
+	!		! TODO: modify for < or > vs .
+	!		select case (p%rt(i))
+	!		case (".")
+	!			match = any(ds(:,id) == p%rv(i))
+	!		!case ("<")
+	!		!	match = any(ds(:,id) < p%rv(i))
+	!		end select
 
-			if (p%rt(i) /= ".") cycle
-			!if (.not. any(p%rt(i) == [".", "<"])) cycle  ! TODO: add ">" to this list when ready
+	!		if (match) exit
+	!	end do
+	!	if (match) then
+	!		!print *, "match"
+	!		nmatch = nmatch + 1
+	!		imatch(nmatch) = id
+	!	else
+	!		nnomatch = nnomatch + 1
+	!		inomatch(nnomatch) = id
+	!	end if
+	!end do
 
-			if (rn(i) /= 1) cycle
+	!! Might want to bring back threading.  This "match" ordering makes some
+	!! problems slower, but it's necessary for 2025-10-28
+	!imatch = imatch(1: nmatch)  ! trim
+	!inomatch = inomatch(1: nnomatch)
+	!print *, "imatch = ", imatch
+	!print *, "inomatch = ", inomatch
 
-			! TODO: modify for < or > vs .
-			match = any(ds(:,id) == p%rv(i))
+	!idx = [imatch, inomatch]
+	!!idx = [inomatch, imatch]
+	!ds = ds(:, idx)
+	!pos = pos(idx)
 
-			if (match) exit
-		end do
-		if (match) then
-			print *, "match"
-			nmatch = nmatch + 1
-			imatch(nmatch) = id
-		else
-			nnomatch = nnomatch + 1
-			inomatch(nnomatch) = id
-		end if
-	end do
-	imatch = imatch(1: nmatch)  ! trim
-	inomatch = inomatch(1: nnomatch)
-	print *, "imatch = ", imatch
-	print *, "inomatch = ", inomatch
-
-	idx = [imatch, inomatch]
-	!idx = [inomatch, imatch]
-	ds = ds(:, idx)
-	pos = pos(idx)
-
-	call print_mat_i32("dominoes (sorted) = ", ds)
-	print *, "np  (sorted) = ", np(idx)
+	call print_mat_i32("dominoes (sorted) = ", ds1)
+	print *, "np  (sorted) = ", np(idx1)
 
 	write(*,*) "Searching for solution ..."
 
-	is_solvable = search(p, rn, ds, pos, ig, navail, 1, has_horz, has_vert, ans_)
-	!print *, "section 1 done"
+	!is_solvable = search(p, rn, ds1, pos1, ig, navail, 1, has_horz, has_vert, ans_)
+	!!print *, "section 1 done"
+
+	has_sln = .false.
+
+!$omp parallel default(shared) private(ans_)
+!$omp sections
+
+!$omp section
+	is_solvable1 = search(p, rn, ds1, pos1, ig, navail, 1, has_horz, has_vert, ans1)
+	has_sln = has_sln .or. is_solvable1  ! careful re race conditions!
+	!print *, "ans1 = ", ans1
+	print *, "section 1 done"
+
+!$omp section
+	is_solvable2 = search(p, rn, ds2, pos2, ig, navail, 1, has_horz, has_vert, ans2)
+	has_sln = has_sln .or. is_solvable2
+	!print *, "ans2 = ", ans2
+	print *, "section 2 done"
+
+!$omp end sections nowait
+!$omp end parallel
+
+	if (is_solvable1) ans_ = ans1
+	if (is_solvable2) ans_ = ans2
+	is_solvable = is_solvable1 .or. is_solvable2
 
 	if (.not. is_solvable) then
 		call panic("puzzle is not solvable")
@@ -257,6 +288,12 @@ recursive logical function search(p, rn, ds, pos, ig, navail, id, has_horz, has_
 	! (transformation)
 	ans = .false.
 	do ip = 1, size(pos(id)%mat,2)
+		if (has_sln) then
+			sln = ""
+			ans = .false.
+			return
+		end if
+
 		x0 = pos(id)%mat(1, ip)
 		y0 = pos(id)%mat(2, ip)
 		t  = pos(id)%mat(3, ip)
@@ -333,6 +370,7 @@ logical function is_valid(p, rn, igl, navail, d, x0, y0)
 		ic = ichar(c)
 		if (igl(x,y) < 0) then
 			sums_max(ic) = sums_max(ic) + 6  ! max possible sum if all remaining squares are 6
+			! TODO: put the `max_avail` opt back in? Already doing most of the work
 			is_complete(ic) = .false.
 			cycle
 		end if
@@ -366,23 +404,18 @@ logical function is_valid(p, rn, igl, navail, d, x0, y0)
 				can_pack = sums(ic) <= p%rv(i) .and. sums_max(ic) >= p%rv(i)
 			end if
 		case (">")
-			! TODO: handle special single-square cases for ">" and "<" too.
-			! Careful with off-by-one indexing of navail(0:6)
 			if (is_complete(ic)) then
 				can_pack = sums(ic) > p%rv(i)
+			else if (rn(i) == 1) then
+				can_pack = any(navail( p%rv(i)+2: ) > 0)
+				!print *, "can_pack = ", can_pack
+				!if (.not. can_pack) call exit(1)
 			else
 				can_pack = sums_max(ic) > p%rv(i)
 			end if
 		case ("<")
-			!if (rn(i) == 1) then
 			if (.not. is_complete(ic) .and. rn(i) == 1) then
-				!can_pack = sums(ic) < p%rv(i) .or. any(navail( 1: p%rv(i) ) > 0)
 				can_pack = any(navail( 1: p%rv(i) ) > 0)
-				!!if (is_complete(ic)
-				!if (.not. can_pack) then
-				!	print *, "can_pack = ", can_pack
-				!	call exit(1)
-				!end if
 			else
 				can_pack = sums(ic) < p%rv(i)
 			end if
@@ -473,7 +506,7 @@ program main
 	use aoc_m
 	implicit none
 
-	character(len = :), allocatable :: p1, expect1
+	character(len = :), allocatable :: p1, expect1, exp_alt
 	logical :: error = .false.
 	type(args_t) :: args
 
@@ -484,6 +517,7 @@ program main
 	p1 = rm_char(p1, " ")
 	print *, "p1 = ", p1
 
+	exp_alt = ""
 	select case (args%input_filename)
 
 	case ("inputs/easy-2025-12-28.txt")
@@ -508,7 +542,8 @@ program main
 		expect1 = ":6-55-5::6455:||||:6013::633-3:||:42::02:||:02::4-2:"
 
 	case ("inputs/2025-12-24.json")
-		expect1 =  ":0:|:2::24-6:|:66:|:1-33:;:1-30-4::011:|||:040::5-53-4:;:3-36-4::6444:||||:5203::2-33-0::1-5::10:||:25::1-6:;"
+		expect1 = ":0:|:2::24-6:|:66:|:1-33:;:1-30-4::011:|||:040::5-53-4:;:3-36-4::6444:||||:5203::2-33-0::1-5::10:||:25::1-6:;"
+		exp_alt = ":0:|:2::24-6:|:66:|:1-33:;:1-30-4::010:|||:041::5-54-3:;:3-36-4::6444:||||:5203::2-33-0::1-5::10:||:25::1-6:;"
 
 	case default
 		expect1 = "REPLACE_ME"
@@ -516,7 +551,7 @@ program main
 
 	if (args%assert) then
 
-		if (p1 /= expect1) then
+		if (p1 /= expect1 .and. p1 /= exp_alt) then
 			write(*,*) ERROR_STR//'wrong answer.  Got "' &
 				//p1//'", expected "'//expect1//'"'
 			error = .true.

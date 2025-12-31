@@ -65,10 +65,10 @@ function solve_pips(p) result(ans_)
 	type(pips_t), intent(in) :: p
 	character(len = :), allocatable :: ans_
 	!********
-	character(len = :), allocatable :: ans1, ans2
-	integer :: x, y, x0, y0, t, id
-	integer, allocatable :: ig(:,:), ds(:,:), idx(:), d(:,:), igl(:,:)
-	logical :: is_solvable1, is_solvable2
+	integer :: x, y, x0, y0, t, id, i, nmatch, nnomatch
+	integer, allocatable :: ig(:,:), ds(:,:), idx(:), d(:,:), igl(:,:), rn(:), &
+		navail(:), imatch(:), inomatch(:)
+	logical :: is_solvable, match
 	logical, allocatable :: has_horz(:,:), has_vert(:,:)
 	integer, allocatable :: np(:)
 	type(mat_i32), allocatable :: pos(:)
@@ -82,6 +82,21 @@ function solve_pips(p) result(ans_)
 	end do
 	end do
 	!call print_mat_i32("ig (init) = ", transpose(ig))
+
+	! Get the size of each region
+	rn = zeros_i32(p%nr)
+	do i = 1, p%nr
+		rn(i) = count(p%cg == p%rl(i))
+	end do
+	print *, "rn = ", rn
+
+	! Count the number of available squares of each pip count (0:6)
+	navail = zeros_i32(7)
+	do i = 1, p%nd
+		navail(p%ds(1,i)+1) = navail(p%ds(1,i)+1) + 1
+		navail(p%ds(2,i)+1) = navail(p%ds(2,i)+1) + 1
+	end do
+	print *, "navail = ", navail
 
 	! Before starting recursive search, make a pass where we use is_valid() to
 	! find all possible positions/orientations of each domino in isolation. A
@@ -107,7 +122,7 @@ function solve_pips(p) result(ans_)
 			d = trans_(p%ds(:,id), t)
 			igl = ig  ! local copy
 
-			if (.not. is_valid(p, igl, d, x0, y0)) cycle
+			if (.not. is_valid(p, rn, igl, navail, d, x0, y0)) cycle
 			np(id) = np(id) + 1
 			pos(id)%mat(:, np(id)) = [x0, y0, t]
 
@@ -126,23 +141,66 @@ function solve_pips(p) result(ans_)
 	! Sort dominoes by their number of valid positions. This optimization makes
 	! the search run >>10x faster (from 1+ min on laptop battery for hard
 	! problem down to <2 sec)
+
+	! TODO: 2025-10-28 is hard, I think we still need special handling for
+	! single-square sum constraints as this might prune down that particular
+	! problem. Might want to go back to something like the `navail` technique:
+	!
+	!     https://github.com/JeffIrwin/aoc-fortran/commit/2c6d8d41f9a22fff841a82015c920fc84fd41bc0
+
 	idx = sort_index(np)
 	ds = p%ds(:, idx)
 	pos = pos(idx)
 
+	! Put any dominoes matching single-square sum constraints at the front
+	! (end?) of the list
+	nmatch = 0
+	nnomatch = 0
+	imatch   = zeros_i32(p%nd)
+	inomatch = zeros_i32(p%nd)
+	do id = 1, p%nd
+		print *, "domino = ", ds(:,id)
+		match = .false.
+		do i = 1, p%nr
+
+			if (p%rt(i) /= ".") cycle
+			!if (.not. any(p%rt(i) == [".", "<"])) cycle  ! TODO: add ">" to this list when ready
+
+			if (rn(i) /= 1) cycle
+
+			! TODO: modify for < or > vs .
+			match = any(ds(:,id) == p%rv(i))
+
+			if (match) exit
+		end do
+		if (match) then
+			print *, "match"
+			nmatch = nmatch + 1
+			imatch(nmatch) = id
+		else
+			nnomatch = nnomatch + 1
+			inomatch(nnomatch) = id
+		end if
+	end do
+	imatch = imatch(1: nmatch)  ! trim
+	inomatch = inomatch(1: nnomatch)
+	print *, "imatch = ", imatch
+	print *, "inomatch = ", inomatch
+
+	idx = [imatch, inomatch]
+	!idx = [inomatch, imatch]
+	ds = ds(:, idx)
+	pos = pos(idx)
+
 	call print_mat_i32("dominoes (sorted) = ", ds)
-	print *, "np  = ", np
+	print *, "np  (sorted) = ", np(idx)
 
 	write(*,*) "Searching for solution ..."
 
-	is_solvable1 = search(p, ds, pos, ig, 1, has_horz, has_vert, ans1)
-	!print *, "ans1 = ", ans1
+	is_solvable = search(p, rn, ds, pos, ig, navail, 1, has_horz, has_vert, ans_)
 	!print *, "section 1 done"
 
-	if (is_solvable1) ans_ = ans1
-	if (is_solvable2) ans_ = ans2
-
-	if (.not. (is_solvable1 .or. is_solvable2)) then
+	if (.not. is_solvable) then
 		call panic("puzzle is not solvable")
 	end if
 
@@ -150,21 +208,23 @@ end function solve_pips
 
 !===============================================================================
 
-recursive logical function search(p, ds, pos, ig, id, has_horz, has_vert, sln) result(ans)
+recursive logical function search(p, rn, ds, pos, ig, navail, id, has_horz, has_vert, sln) result(ans)
 	! Pack the domino `id` into integer grid `ig`, return false if it violates
 	! geometric or numeric constraints. Solution string `sln` is returned as
 	! out-arg
 	type(pips_t), intent(in) :: p
+	integer, intent(in) :: rn(:)
 	integer, intent(in) :: ds(:,:)
 	type(mat_i32), intent(in) :: pos(:)
 	integer, intent(inout) :: ig(:,:)
+	integer, intent(in) :: navail(:)
 	integer, intent(in) :: id
 	logical, intent(in) :: has_horz(:,:), has_vert(:,:)
 	character(len=:), allocatable :: sln
 	!********
 	character, allocatable :: g(:,:)
 	integer :: x0, y0, t, x, y, ip
-	integer, allocatable :: d(:,:), igl(:,:)
+	integer, allocatable :: d(:,:), igl(:,:), navaill(:)
 	logical, allocatable :: has_horzl(:,:), has_vertl(:,:)
 
 	if (id > size(ds,2)) then
@@ -203,17 +263,26 @@ recursive logical function search(p, ds, pos, ig, id, has_horz, has_vert, sln) r
 
 		d = trans_(ds(:,id), t)
 		igl = ig  ! local copy
-		if (.not. is_valid(p, igl, d, x0, y0)) cycle
+		if (.not. is_valid(p, rn, igl, navail, d, x0, y0)) cycle
 
 		has_horzl = has_horz
 		has_vertl = has_vert
+		navaill = navail
 		if (size(d,1) > 1) then
 			has_horzl(x0,y0) = .true.
 		else
 			has_vertl(x0,y0) = .true.
 		end if
 
-		if (search(p, ds, pos, igl, id+1, has_horzl, has_vertl, sln)) then
+		! Decrement the available count
+		navaill(ds(1,id)+1) = navaill(ds(1,id)+1) - 1
+		navaill(ds(2,id)+1) = navaill(ds(2,id)+1) - 1
+		!max_avail = 0
+		!do i = 0, 6
+		!	if (navaill(i+1) > 0) max_avail = i
+		!end do
+
+		if (search(p, rn, ds, pos, igl, navaill, id+1, has_horzl, has_vertl, sln)) then
 			ans = .true.
 			return
 		end if
@@ -223,9 +292,11 @@ end function search
 
 !===============================================================================
 
-logical function is_valid(p, igl, d, x0, y0)
+logical function is_valid(p, rn, igl, navail, d, x0, y0)
 	type(pips_t), intent(in) :: p
+	integer, intent(in) :: rn(:)
 	integer, intent(inout) :: igl(:,:)
+	integer, intent(in) :: navail(:)
 	integer, intent(in) :: d(:,:), x0, y0
 	!********
 	character :: c
@@ -285,17 +356,36 @@ logical function is_valid(p, igl, d, x0, y0)
 		case (".")
 			if (is_complete(ic)) then
 				can_pack = sums(ic) == p%rv(i)
+			else if (rn(i) == 1) then
+				! Handle special case for single-square sum constraints here
+				can_pack = navail( p%rv(i) + 1 ) > 0
+				!can_pack = navail( p%rv(i) ) > 0
+				!print *, "can_pack = ", can_pack
+				!if (.not. can_pack) stop
 			else
 				can_pack = sums(ic) <= p%rv(i) .and. sums_max(ic) >= p%rv(i)
 			end if
 		case (">")
+			! TODO: handle special single-square cases for ">" and "<" too.
+			! Careful with off-by-one indexing of navail(0:6)
 			if (is_complete(ic)) then
 				can_pack = sums(ic) > p%rv(i)
 			else
 				can_pack = sums_max(ic) > p%rv(i)
 			end if
 		case ("<")
-			can_pack = sums(ic) < p%rv(i)
+			!if (rn(i) == 1) then
+			if (.not. is_complete(ic) .and. rn(i) == 1) then
+				!can_pack = sums(ic) < p%rv(i) .or. any(navail( 1: p%rv(i) ) > 0)
+				can_pack = any(navail( 1: p%rv(i) ) > 0)
+				!!if (is_complete(ic)
+				!if (.not. can_pack) then
+				!	print *, "can_pack = ", can_pack
+				!	call exit(1)
+				!end if
+			else
+				can_pack = sums(ic) < p%rv(i)
+			end if
 		case ("=")
 			can_pack = all_eq(vals(1: nvals(ic), ic))
 		case ("!")
@@ -427,7 +517,7 @@ program main
 	if (args%assert) then
 
 		if (p1 /= expect1) then
-			write(*,*) ERROR_STR//'wrong part 1 answer.  Got "' &
+			write(*,*) ERROR_STR//'wrong answer.  Got "' &
 				//p1//'", expected "'//expect1//'"'
 			error = .true.
 		end if

@@ -7,6 +7,8 @@ module pips_io_m
 
 	type pips_t
 		! Pips game input data
+		!
+		! TODO: rename members
 		character, allocatable :: cg(:,:), rl(:), rt(:)
 		integer :: nx, ny, nr, nd
 		integer, allocatable :: rv(:)

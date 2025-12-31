@@ -2,6 +2,7 @@
 module convert_m
 
 	use aoc_all_m
+	use utils_m
 	use pips_io_m
 	implicit none
 
@@ -10,21 +11,23 @@ contains
 subroutine convert(input_filename, output_filename)
 	character(len=*), intent(in) :: input_filename, output_filename
 	!********
-	character(len=:), allocatable :: d
+	character(len=:), allocatable :: difficulty, dir, base
 	integer :: i
 	type(str_vec_t) :: difficulties
+	type(pips_t) :: pips
 
 	difficulties = new_str_vec()
 	call difficulties%push("easy")
 	call difficulties%push("medium")
 	call difficulties%push("hard")
 
+	dir = get_dir(output_filename)
+	base = get_base_with_ext(output_filename)
+
 	do i = 1, i32(difficulties%len)
-		d = difficulties%vec(i)%str
-		! TODO: output filename doesn't work if it's in a subdir. Steal the
-		! path-splitting fn (from syntran?) to put the difficulty prefix after
-		! the dir but before the basename
-		call write_pips_text(d//"-"//output_filename, read_pips_json(input_filename, d))
+		difficulty = difficulties%vec(i)%str
+		pips = read_pips_json(input_filename, difficulty)
+		call write_pips_text(dir//difficulty//"-"//base, pips)
 	end do
 
 end subroutine convert

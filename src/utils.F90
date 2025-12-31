@@ -659,6 +659,57 @@ end function ends_with
 
 !===============================================================================
 
+function get_base_with_ext(filename) result(basename)
+	! Get basename plus extension
+	character(len = *), intent(in)  :: filename
+	character(len = :), allocatable :: basename
+	!********
+	integer :: beg_, end_, i
+
+	beg_ = 1
+	end_ = len(filename)
+
+	!print *, 'len = ', end_
+
+	i = scan(filename, '/\', .true.)
+	if (i /= 0) beg_ = i + 1
+
+	basename = filename(beg_: end_)
+	!print *, 'beg_, end_ = ', beg_, end_
+
+end function get_base_with_ext
+
+!===============================================================================
+
+function get_dir(filename) result(dir)
+	character(len = *), intent(in)  :: filename
+	character(len = :), allocatable :: dir
+	!********
+	character(len = :), allocatable :: path
+	integer :: beg_, end_, i
+
+	!! Return the absolute path dir
+	!path = fullpath(filename)
+
+	! Return relative path or absolute, whichever way input filename is given
+	path = filename
+
+	beg_ = 1
+	!end_ = len(path)
+	end_ = 0
+
+	!print *, 'len = ', end_
+
+	i = scan(path, '/\', .true.)
+	if (i /= 0) end_ = i
+
+	dir = path(beg_: end_)
+	!print *, 'beg_, end_ = ', beg_, end_
+
+end function get_dir
+
+!===============================================================================
+
 end module utils_m
 
 !===============================================================================

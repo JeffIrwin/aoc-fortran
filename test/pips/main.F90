@@ -142,26 +142,14 @@ function solve_pips(p) result(ans_)
 
 	end do
 
-	! Sort dominoes by the sum of each tile. This optimization makes the search
-	! run >10x faster (from 1+ min on laptop battery for hard problem down to <2
-	! sec)
+	! Sort dominoes by their number of valid positions. This optimization makes
+	! the search run >>10x faster (from 1+ min on laptop battery for hard
+	! problem down to <2 sec)
 
-	! Reverse search makes sense and is faster for 2025-12-27's hard problem
-	!
-	! Somehow forward search is faster for 2025-12-26's hard problem, and it is
-	! much better on average and worst case
-	!
-	! Solve both sorts in parallel on different threads.  Most (?) problems
-	! finish at least one thread quickly (<1s) and then the other thread could
-	! stop.  Random unsorted permutations could be added in more threads but I
-	! don't see the need unless there are problems that take longer
-
-	!idx1 = sort_index(sum(p%ds, 1))     ! 5m13s
-	!idx1 = sort_index(minval(p%ds, 1))  ! 5m52s
-	idx1 = sort_index(maxval(p%ds, 1))  ! 4m21s, 4m18s
-	!idx1 = sort_index(np)  ! TODO: much faster even without actually using sparse pos
-
+	! TODO: do we still need threading?
+	idx1 = sort_index(np)
 	idx2 = reverse(idx1)
+
 	ds1 = p%ds(:, idx1)
 	ds2 = p%ds(:, idx2)
 	pos1 = pos(idx1)

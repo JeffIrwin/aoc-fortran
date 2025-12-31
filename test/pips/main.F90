@@ -67,7 +67,6 @@ function solve_pips(p) result(ans_)
 	!********
 	character(len = :), allocatable :: ans1, ans2
 	integer :: x, y, x0, y0, t, id
-	integer :: ntot, ngeo, nvld  ! TODO: debug only
 	integer, allocatable :: ig(:,:), ds(:,:), idx(:), d(:,:), igl(:,:)
 	logical :: is_solvable1, is_solvable2
 	logical, allocatable :: has_horz(:,:), has_vert(:,:)
@@ -101,39 +100,25 @@ function solve_pips(p) result(ans_)
 	do id = 1, p%nd
 
 		allocate(pos(id)%mat( 3, 4*count(p%cg /= ".") ))  ! over-allocate
-
-		ntot = 0
-		ngeo = 0
-		nvld = 0
 		do y0 = 1, p%ny
 		do x0 = 1, p%nx
 		do t = 1, 4
 
-			ntot = ntot + 1
 			d = trans_(p%ds(:,id), t)
 			igl = ig  ! local copy
 
-			! TODO: delete after debugging
-			if (.not. is_valid(p, igl, d, x0, y0, geo_only = .true.)) cycle
-			ngeo = ngeo + 1
-			igl = ig  ! reset
-
-			if (.not. is_valid(p, igl, d, x0, y0, geo_only = .false.)) cycle
-			nvld = nvld + 1
+			if (.not. is_valid(p, igl, d, x0, y0)) cycle
 			np(id) = np(id) + 1
-
 			pos(id)%mat(:, np(id)) = [x0, y0, t]
 
 		end do
 		end do
 		end do
 
-		! The pos matrices could be fragmented it memory. Might be better to
+		! The pos matrices could be fragmented in memory. Might be better to
 		! make one big matrix shared by all dominoes, along with a start/end
 		! index for each domino
 		pos(id)%mat = pos(id)%mat(:, 1: np(id))  ! trim
-
-		print *, "ntot, ngeo, nvld = ", ntot, ngeo, nvld
 		!call print_mat_i32("pos "//to_str(id)//" = ", pos(id)%mat)
 
 	end do
@@ -218,7 +203,7 @@ recursive logical function search(p, ds, pos, ig, id, has_horz, has_vert, sln) r
 
 		d = trans_(ds(:,id), t)
 		igl = ig  ! local copy
-		if (.not. is_valid(p, igl, d, x0, y0, geo_only = .false.)) cycle
+		if (.not. is_valid(p, igl, d, x0, y0)) cycle
 
 		has_horzl = has_horz
 		has_vertl = has_vert
@@ -238,11 +223,10 @@ end function search
 
 !===============================================================================
 
-logical function is_valid(p, igl, d, x0, y0, geo_only)
+logical function is_valid(p, igl, d, x0, y0)
 	type(pips_t), intent(in) :: p
 	integer, intent(inout) :: igl(:,:)
 	integer, intent(in) :: d(:,:), x0, y0
-	logical, intent(in) :: geo_only  ! TODO: debug only
 	!********
 	character :: c
 	integer :: i, ndx, ndy, x, y, ic
@@ -265,11 +249,6 @@ logical function is_valid(p, igl, d, x0, y0, geo_only)
 	if (.not. can_pack) return
 
 	igl(x0: x0+ndx-1, y0: y0+ndy-1) = d
-
-	if (geo_only) then
-		is_valid = .true.
-		return
-	end if
 
 	! Check if the sums of each region satisfy the numeric constraints
 	sums = 0

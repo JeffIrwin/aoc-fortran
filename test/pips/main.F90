@@ -5,9 +5,6 @@ module aoc_m
 	use pips_io_m
 	implicit none
 
-	! TODO: can this be an inout arg? Not sure how OpenMP works
-	logical :: has_sln  ! shared mutable thread control. dangerous!
-
 	type mat_i32
 		! Wrapper class so each domino can have a different sized list of valid positions
 		integer, allocatable :: mat(:,:)
@@ -71,12 +68,11 @@ function solve_pips(p) result(ans_)
 	character(len = :), allocatable :: ans1, ans2
 	integer :: x, y, x0, y0, t, id
 	integer :: ntot, ngeo, nvld  ! TODO: debug only
-	integer, allocatable :: ig(:,:), idx1(:), idx2(:), d(:,:), igl(:,:)
-	integer, allocatable :: ds1(:,:), ds2(:,:)
+	integer, allocatable :: ig(:,:), ds(:,:), idx(:), d(:,:), igl(:,:)
 	logical :: is_solvable1, is_solvable2
 	logical, allocatable :: has_horz(:,:), has_vert(:,:)
 	integer, allocatable :: np(:)
-	type(mat_i32), allocatable :: pos(:), pos1(:), pos2(:)
+	type(mat_i32), allocatable :: pos(:)
 
 	ig = -ones_i32(p%nx, p%ny)  ! initialize empty spots as -1
 	has_horz = falses(p%nx, p%ny)
@@ -145,39 +141,18 @@ function solve_pips(p) result(ans_)
 	! Sort dominoes by their number of valid positions. This optimization makes
 	! the search run >>10x faster (from 1+ min on laptop battery for hard
 	! problem down to <2 sec)
+	idx = sort_index(np)
+	ds = p%ds(:, idx)
+	pos = pos(idx)
 
-	! TODO: do we still need threading?
-	idx1 = sort_index(np)
-	idx2 = reverse(idx1)
-
-	ds1 = p%ds(:, idx1)
-	ds2 = p%ds(:, idx2)
-	pos1 = pos(idx1)
-	pos2 = pos(idx2)
-
-	call print_mat_i32("dominoes (sorted) = ", ds1)
+	call print_mat_i32("dominoes (sorted) = ", ds)
 	print *, "np  = ", np
 
 	write(*,*) "Searching for solution ..."
-	has_sln = .false.
 
-!$omp parallel default(shared) private(ans_)
-!$omp sections
-
-!$omp section
-	is_solvable1 = search(p, ds1, pos1, ig, 1, has_horz, has_vert, ans1)
-	has_sln = has_sln .or. is_solvable1  ! careful re race conditions!
+	is_solvable1 = search(p, ds, pos, ig, 1, has_horz, has_vert, ans1)
 	!print *, "ans1 = ", ans1
-	print *, "section 1 done"
-
-!$omp section
-	is_solvable2 = search(p, ds2, pos2, ig, 1, has_horz, has_vert, ans2)
-	has_sln = has_sln .or. is_solvable2
-	!print *, "ans2 = ", ans2
-	print *, "section 2 done"
-
-!$omp end sections nowait
-!$omp end parallel
+	!print *, "section 1 done"
 
 	if (is_solvable1) ans_ = ans1
 	if (is_solvable2) ans_ = ans2
@@ -240,12 +215,6 @@ recursive logical function search(p, ds, pos, ig, id, has_horz, has_vert, sln) r
 		x0 = pos(id)%mat(1, ip)
 		y0 = pos(id)%mat(2, ip)
 		t  = pos(id)%mat(3, ip)
-
-		if (has_sln) then
-			sln = ""
-			ans = .false.
-			return
-		end if
 
 		d = trans_(ds(:,id), t)
 		igl = ig  ! local copy

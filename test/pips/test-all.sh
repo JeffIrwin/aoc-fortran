@@ -33,6 +33,7 @@ for test in "${debug_tests[@]}" ; do
 	((ndebug++)) || true
 done
 
+rm main
 ./run.sh -t release  # run test just to build
 for test in "${release_tests[@]}" ; do
 	time ./main -a -i inputs/"$test"

@@ -69,10 +69,10 @@ function solve_pips(p) result(ans_)
 	character(len = :), allocatable :: ans_
 	!********
 	character(len = :), allocatable :: ans1, ans2
-	integer :: x, y, x0, y0, t, id, i, nmatch, nnomatch
+	integer :: x, y, x0, y0, t, id, i
 	integer, allocatable :: ig(:,:), ds1(:,:), ds2(:,:), idx1(:), idx2(:), d(:,:), igl(:,:), rn(:), &
-		navail(:), imatch(:), inomatch(:)
-	logical :: is_solvable, is_solvable1, is_solvable2, match
+		navail(:)
+	logical :: is_solvable, is_solvable1, is_solvable2
 	logical, allocatable :: has_horz(:,:), has_vert(:,:)
 	integer, allocatable :: np(:)
 	type(mat_i32), allocatable :: pos(:), pos1(:), pos2(:)
@@ -147,68 +147,21 @@ function solve_pips(p) result(ans_)
 	! problem down to <2 sec)
 
 	idx1 = sort_index(np)
+	!idx1 = sort_index(sum(p%ds, 1))
+	!idx1 = sort_index(maxval(p%ds, 1))
+	!idx1 = sort_index(minval(p%ds, 1))
+
 	idx2 = reverse(idx1)
 	ds1 = p%ds(:, idx1)
 	ds2 = p%ds(:, idx2)
 	pos1 = pos(idx1)
 	pos2 = pos(idx2)
 
-	!! Put any dominoes matching single-square sum constraints at the front
-	!! (end?) of the list
-	!!
-	!! TODO: delete
-	!nmatch = 0
-	!nnomatch = 0
-	!imatch   = zeros_i32(p%nd)
-	!inomatch = zeros_i32(p%nd)
-	!do id = 1, p%nd
-	!	!print *, "domino = ", ds(:,id)
-	!	match = .false.
-	!	do i = 1, p%nr
-	!		if (rn(i) /= 1) cycle
-
-	!		! TODO: modify for < or > vs .
-	!		select case (p%rt(i))
-	!		case (".")
-	!			match = any(ds(:,id) == p%rv(i))
-	!		!case ("<")
-	!		!	match = any(ds(:,id) < p%rv(i))
-	!		end select
-
-	!		if (match) exit
-	!	end do
-	!	if (match) then
-	!		!print *, "match"
-	!		nmatch = nmatch + 1
-	!		imatch(nmatch) = id
-	!	else
-	!		nnomatch = nnomatch + 1
-	!		inomatch(nnomatch) = id
-	!	end if
-	!end do
-
-	!! Might want to bring back threading.  This "match" ordering makes some
-	!! problems slower, but it's necessary for 2025-10-28
-	!imatch = imatch(1: nmatch)  ! trim
-	!inomatch = inomatch(1: nnomatch)
-	!print *, "imatch = ", imatch
-	!print *, "inomatch = ", inomatch
-
-	!idx = [imatch, inomatch]
-	!!idx = [inomatch, imatch]
-	!ds = ds(:, idx)
-	!pos = pos(idx)
-
 	call print_mat_i32("dominoes (sorted) = ", ds1)
 	print *, "np  (sorted) = ", np(idx1)
 
 	write(*,*) "Searching for solution ..."
-
-	!is_solvable = search(p, rn, ds1, pos1, ig, navail, 1, has_horz, has_vert, ans_)
-	!!print *, "section 1 done"
-
 	has_sln = .false.
-
 !$omp parallel default(shared) private(ans_)
 !$omp sections
 
@@ -314,10 +267,6 @@ recursive logical function search(p, rn, ds, pos, ig, navail, id, has_horz, has_
 		! Decrement the available count
 		navaill(ds(1,id)+1) = navaill(ds(1,id)+1) - 1
 		navaill(ds(2,id)+1) = navaill(ds(2,id)+1) - 1
-		!max_avail = 0
-		!do i = 0, 6
-		!	if (navaill(i+1) > 0) max_avail = i
-		!end do
 
 		if (search(p, rn, ds, pos, igl, navaill, id+1, has_horzl, has_vertl, sln)) then
 			ans = .true.
@@ -337,7 +286,7 @@ logical function is_valid(p, rn, igl, navail, d, x0, y0)
 	integer, intent(in) :: d(:,:), x0, y0
 	!********
 	character :: c
-	integer :: i, ndx, ndy, x, y, ic
+	integer :: i, ndx, ndy, x, y, ic, max_avail
 	integer :: sums(128), vals(32, 128), nvals(128), sums_max(128)
 	logical :: can_pack = .true.
 	logical :: is_complete(128)  ! keys are ascii so arrays are size 128
@@ -358,6 +307,11 @@ logical function is_valid(p, rn, igl, navail, d, x0, y0)
 
 	igl(x0: x0+ndx-1, y0: y0+ndy-1) = d
 
+	max_avail = 0
+	do i = 0, 6
+		if (navail(i+1) > 0) max_avail = i
+	end do
+
 	! Check if the sums of each region satisfy the numeric constraints
 	sums = 0
 	sums_max = 0
@@ -369,8 +323,7 @@ logical function is_valid(p, rn, igl, navail, d, x0, y0)
 		if (c == "*") cycle  ! wildcard, free square
 		ic = ichar(c)
 		if (igl(x,y) < 0) then
-			sums_max(ic) = sums_max(ic) + 6  ! max possible sum if all remaining squares are 6
-			! TODO: put the `max_avail` opt back in? Already doing most of the work
+			sums_max(ic) = sums_max(ic) + max_avail
 			is_complete(ic) = .false.
 			cycle
 		end if

@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 
 # Run all inputs for benchmarking, without correctness checks
+#
+# But, if the solver finishes and provides *any* solution without panicking, it
+# *should* be correct
 
 set -exu
 

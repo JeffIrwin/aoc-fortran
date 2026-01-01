@@ -1,6 +1,8 @@
-#!/bin/bash
-#
+#!/usr/bin/env bash
+
 # Source:  https://github.com/ematth/pips/blob/main/fetch_games.sh
+
+set -exu
 
 # --- Configuration ---
 
@@ -39,7 +41,6 @@ while [ "$current_date_sec" -le "$end_date_sec" ]; do
 
         curl -s "$url" -o "$json_file"
 
-        
         # Check if the download was successful
         if [ $? -eq 0 ] && [ -s "$json_file" ]; then
             echo "Successfully saved $json_file"

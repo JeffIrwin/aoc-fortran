@@ -10,3 +10,6 @@ scratch/
 main
 convert
 
+/test/pips/inputs/*.json
+/test/pips/inputs/*.txt
+

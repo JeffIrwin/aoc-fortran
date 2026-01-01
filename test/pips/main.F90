@@ -55,9 +55,9 @@ end function do_pips
 subroutine print_pips(p)
 	type(pips_t), intent(in) :: p
 
-	write(*,*) "Number of dominoes = ", p%nd
+	write(*,*) "Number of dominoes = ", p%num_dominoes
 
-	call print_mat_i32("dominoes = ", p%ds)
+	call print_mat_i32("dominoes = ", p%domino)
 	write(*,*)
 
 end subroutine print_pips
@@ -82,23 +82,23 @@ function solve_pips(p) result(ans_)
 	has_vert = falses(p%nx, p%ny)
 	do y = 1, p%ny
 	do x = 1, p%nx
-		if (p%cg(x,y) == ".") ig(x,y) = -2  ! mark the outside locations "." with -2
+		if (p%char_grid(x,y) == ".") ig(x,y) = -2  ! mark the outside locations "." with -2
 	end do
 	end do
 	!call print_mat_i32("ig (init) = ", transpose(ig))
 
 	! Get the size of each region
-	rn = zeros_i32(p%nr)
-	do i = 1, p%nr
-		rn(i) = count(p%cg == p%rl(i))
+	rn = zeros_i32(p%num_regions)
+	do i = 1, p%num_regions
+		rn(i) = count(p%char_grid == p%region_name(i))
 	end do
 	print *, "rn = ", rn
 
 	! Count the number of available squares of each pip count (0:6)
 	navail = zeros_i32(7)
-	do i = 1, p%nd
-		navail(p%ds(1,i)+1) = navail(p%ds(1,i)+1) + 1
-		navail(p%ds(2,i)+1) = navail(p%ds(2,i)+1) + 1
+	do i = 1, p%num_dominoes
+		navail(p%domino(1,i)+1) = navail(p%domino(1,i)+1) + 1
+		navail(p%domino(2,i)+1) = navail(p%domino(2,i)+1) + 1
 	end do
 	print *, "navail = ", navail
 
@@ -114,16 +114,16 @@ function solve_pips(p) result(ans_)
 	! That only checked geometric constraints.  Numeric constraints are more
 	! complicated because each domino will have different possibilities
 
-	allocate(pos( p%nd ))
-	np = zeros_i32(p%nd)
-	do id = 1, p%nd
+	allocate(pos( p%num_dominoes ))
+	np = zeros_i32(p%num_dominoes)
+	do id = 1, p%num_dominoes
 
-		allocate(pos(id)%mat( 3, 4*count(p%cg /= ".") ))  ! over-allocate
+		allocate(pos(id)%mat( 3, 4*count(p%char_grid /= ".") ))  ! over-allocate
 		do y0 = 1, p%ny
 		do x0 = 1, p%nx
 		do t = 1, 4
 
-			d = trans_(p%ds(:,id), t)
+			d = trans_(p%domino(:,id), t)
 			igl = ig  ! local copy
 
 			if (.not. is_valid(p, rn, igl, navail, d, x0, y0)) cycle
@@ -147,13 +147,13 @@ function solve_pips(p) result(ans_)
 	! problem down to <2 sec)
 
 	idx1 = sort_index(np)
-	!idx1 = sort_index(sum(p%ds, 1))
-	!idx1 = sort_index(maxval(p%ds, 1))
-	!idx1 = sort_index(minval(p%ds, 1))
+	!idx1 = sort_index(sum(p%domino, 1))
+	!idx1 = sort_index(maxval(p%domino, 1))
+	!idx1 = sort_index(minval(p%domino, 1))
 
 	idx2 = reverse(idx1)
-	ds1 = p%ds(:, idx1)
-	ds2 = p%ds(:, idx2)
+	ds1 = p%domino(:, idx1)
+	ds2 = p%domino(:, idx2)
 	pos1 = pos(idx1)
 	pos2 = pos(idx2)
 
@@ -319,7 +319,7 @@ logical function is_valid(p, rn, igl, navail, d, x0, y0)
 	nvals = 0
 	do y = 1, p%ny
 	do x = 1, p%nx
-		c = p%cg(x,y)
+		c = p%char_grid(x,y)
 		if (c == "*") cycle  ! wildcard, free square
 		ic = ichar(c)
 		if (igl(x,y) < 0) then
@@ -337,40 +337,40 @@ logical function is_valid(p, rn, igl, navail, d, x0, y0)
 
 	can_pack = .true.
 	!print *, "sums = "
-	do i = 1, p%nr
-		ic = ichar(p%rl(i))
+	do i = 1, p%num_regions
+		ic = ichar(p%region_name(i))
 		!print *, rl(i), ": ", to_str(sums(ic))
-		!print *, "rt = ", p%rt(i)
+		!print *, "rt = ", p%type_(i)
 		!print *, "is_complete = ", is_complete(ic)
 
-		select case (p%rt(i))
+		select case (p%type_(i))
 		case (".")
 			if (is_complete(ic)) then
-				can_pack = sums(ic) == p%rv(i)
+				can_pack = sums(ic) == p%target_(i)
 			else if (rn(i) == 1) then
 				! Handle special case for single-square sum constraints here
-				can_pack = navail( p%rv(i) + 1 ) > 0
-				!can_pack = navail( p%rv(i) ) > 0
+				can_pack = navail( p%target_(i) + 1 ) > 0
+				!can_pack = navail( p%target_(i) ) > 0
 				!print *, "can_pack = ", can_pack
 				!if (.not. can_pack) stop
 			else
-				can_pack = sums(ic) <= p%rv(i) .and. sums_max(ic) >= p%rv(i)
+				can_pack = sums(ic) <= p%target_(i) .and. sums_max(ic) >= p%target_(i)
 			end if
 		case (">")
 			if (is_complete(ic)) then
-				can_pack = sums(ic) > p%rv(i)
+				can_pack = sums(ic) > p%target_(i)
 			else if (rn(i) == 1) then
-				can_pack = any(navail( p%rv(i)+2: ) > 0)
+				can_pack = any(navail( p%target_(i)+2: ) > 0)
 				!print *, "can_pack = ", can_pack
 				!if (.not. can_pack) call exit(1)
 			else
-				can_pack = sums_max(ic) > p%rv(i)
+				can_pack = sums_max(ic) > p%target_(i)
 			end if
 		case ("<")
 			if (.not. is_complete(ic) .and. rn(i) == 1) then
-				can_pack = any(navail( 1: p%rv(i) ) > 0)
+				can_pack = any(navail( 1: p%target_(i) ) > 0)
 			else
-				can_pack = sums(ic) < p%rv(i)
+				can_pack = sums(ic) < p%target_(i)
 			end if
 		case ("=")
 			can_pack = all_eq(vals(1: nvals(ic), ic))

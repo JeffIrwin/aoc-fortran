@@ -1,3 +1,3 @@
-[submodule "json-fortran"]
-	path = json-fortran
-	url = ../../jeffirwin/json-fortran
+[submodule "jsonf"]
+	path = jsonf
+	url = ../../JeffIrwin/jsonf

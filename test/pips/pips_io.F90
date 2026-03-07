@@ -153,12 +153,12 @@ end function read_pips_text
 !===============================================================================
 
 function read_pips_json(filename, difficulty) result(p)
-	use json_module
+	use jsonf
 	character(len=*), intent(in) :: filename, difficulty
 	type(pips_t) :: p
 	!********
 	integer :: nr, nd, ni, ir, jr, nx, ny, x, y, ii, id
-	type(json_file) :: json
+	type(json_t) :: json
 	character :: c
 	character(len=:), allocatable :: rkey, ikey, dkey, type_
 
@@ -169,15 +169,12 @@ function read_pips_json(filename, difficulty) result(p)
 		call panic('bad difficulty "'//difficulty//'"')
 	end select
 
-	!call json%initialize(stop_on_error = .true., verbose = .true.)
-	call json%initialize(stop_on_error = .true.)
-	call json%load(filename)
-	!call json%print()
+	call json%read_file(filename)
 
 	nx = -huge(nx)
 	ny = -huge(ny)
 
-	call json%info(difficulty//".regions", n_children = nr)
+	nr = json%len("/"//difficulty//"/regions")
 	!print *, "nr = ", nr
 
 	! Read the region constraints. JSON does not provide names, so make them
@@ -191,10 +188,10 @@ function read_pips_json(filename, difficulty) result(p)
 	do ir = 1, nr
 		! Iterate over all regions, including empty ones
 
-		rkey = difficulty//".regions["//to_str(ir)//"]"
+		rkey = "/"//difficulty//"/regions/"//to_str(ir-1)
 		!print *, "rkey = ", rkey
 
-		call json%get(rkey//".type", type_)
+		type_ = json%get_str(rkey//"/type")
 		!print *, "type_ = ", type_
 		if (type_ /= "empty") then
 			jr = jr + 1
@@ -205,13 +202,13 @@ function read_pips_json(filename, difficulty) result(p)
 			! Do nothing. I don't explicitly save empty regions like others
 		case ("sum")
 			!p%type_(jr) = "."  ! default already initialized
-			call json%get(rkey//".target", p%target_(jr))
+			p%target_(jr) = int(json%get_i64(rkey//"/target"))
 		case ("greater")
 			p%type_(jr) = ">"
-			call json%get(rkey//".target", p%target_(jr))
+			p%target_(jr) = int(json%get_i64(rkey//"/target"))
 		case ("less")
 			p%type_(jr) = "<"
-			call json%get(rkey//".target", p%target_(jr))
+			p%target_(jr) = int(json%get_i64(rkey//"/target"))
 		case ("equals")
 			p%type_(jr) = "="
 		case ("unequal")
@@ -220,14 +217,14 @@ function read_pips_json(filename, difficulty) result(p)
 			call panic('bad region type "'//type_//'"')
 		end select
 
-		call json%info(rkey//".indices", n_children = ni)
+		ni = json%len(rkey//"/indices")
 		!print *, "ni = ", ni
 
 		do ii = 1, ni
 			! Iterate over indices
-			ikey = rkey//".indices["//to_str(ii)//"]"
-			call json%get(ikey//"[1]", x)
-			call json%get(ikey//"[2]", y)
+			ikey = rkey//"/indices/"//to_str(ii-1)
+			x = int(json%get_i64(ikey//"/0"))
+			y = int(json%get_i64(ikey//"/1"))
 			!print *, "x, y = ", x, y
 
 			nx = max(nx, x)
@@ -249,20 +246,20 @@ function read_pips_json(filename, difficulty) result(p)
 	! Second pass: save the grid
 	jr = 0  ! non-empty region counter
 	do ir = 1, nr
-		rkey = difficulty//".regions["//to_str(ir)//"]"
-		call json%get(rkey//".type", type_)
+		rkey = "/"//difficulty//"/regions/"//to_str(ir-1)
+		type_ = json%get_str(rkey//"/type")
 		if (type_ == "empty") then
 			c = "*"
 		else
 			jr = jr + 1
 			c = p%region_name(jr)
 		end if
-		call json%info(rkey//".indices", n_children = ni)
+		ni = json%len(rkey//"/indices")
 		do ii = 1, ni
 			! Iterate over indices
-			ikey = rkey//".indices["//to_str(ii)//"]"
-			call json%get(ikey//"[1]", x)
-			call json%get(ikey//"[2]", y)
+			ikey = rkey//"/indices/"//to_str(ii-1)
+			x = int(json%get_i64(ikey//"/0"))
+			y = int(json%get_i64(ikey//"/1"))
 			!print *, "x, y = ", x, y
 			p%char_grid(x+1, y+1) = c
 		end do
@@ -276,13 +273,13 @@ function read_pips_json(filename, difficulty) result(p)
 	!call print_mat_char("cg = ", p%char_grid)
 
 	! Parse the dominoes
-	call json%info(difficulty//".dominoes", n_children = nd)
+	nd = json%len("/"//difficulty//"/dominoes")
 	!print *, "nd = ", nd
 	allocate(p%domino(2, nd))
 	do id = 1, nd
-		dkey = difficulty//".dominoes["//to_str(id)//"]"
-		call json%get(dkey//"[1]", p%domino(1, id))
-		call json%get(dkey//"[2]", p%domino(2, id))
+		dkey = "/"//difficulty//"/dominoes/"//to_str(id-1)
+		p%domino(1, id) = int(json%get_i64(dkey//"/0"))
+		p%domino(2, id) = int(json%get_i64(dkey//"/1"))
 	end do
 	p%num_dominoes = nd
 	!call print_mat_i32("ds (transpose) = ", p%domino)

@@ -21,7 +21,7 @@ set(CONV_SRCS
 set(LIB_DIR "${CMAKE_SOURCE_DIR}/../../src")
 set(LIB_BUILD_DIR "${LIB_DIR}/build/${CMAKE_BUILD_TYPE}")
 add_subdirectory(${LIB_DIR} ${LIB_BUILD_DIR})
-add_subdirectory(../../json-fortran/ ${CMAKE_SOURCE_DIR}/../../json-fortran/build/${CMAKE_BUILD_TYPE})
+add_subdirectory(../../jsonf/ ${CMAKE_SOURCE_DIR}/../../jsonf/build/${CMAKE_BUILD_TYPE})
 
 include(../../template/flags.cmake)
 
@@ -32,7 +32,7 @@ add_executable(${PROJECT} ${SRCS})
 add_executable(${CONV}    ${CONV_SRCS})
 
 # gomp is for OpenMP. TODO: add to template?
-target_link_libraries(${PROJECT} aoc-fortran gomp jsonfortran-static)
+target_link_libraries(${PROJECT} aoc-fortran gomp jsonf_lib)
 target_link_libraries(${CONV} aoc-fortran gomp)
-target_link_libraries(${CONV} jsonfortran-static)
+target_link_libraries(${CONV} jsonf_lib)
 

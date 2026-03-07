@@ -22,6 +22,8 @@ set(LIB_DIR "${CMAKE_SOURCE_DIR}/../../src")
 set(LIB_BUILD_DIR "${LIB_DIR}/build/${CMAKE_BUILD_TYPE}")
 add_subdirectory(${LIB_DIR} ${LIB_BUILD_DIR})
 add_subdirectory(../../jsonf/ ${CMAKE_SOURCE_DIR}/../../jsonf/build/${CMAKE_BUILD_TYPE})
+target_compile_options(jsonf    PRIVATE $<$<COMPILE_LANGUAGE:Fortran>:-ffree-line-length-none>)
+target_compile_options(test_exe PRIVATE $<$<COMPILE_LANGUAGE:Fortran>:-ffree-line-length-none>)
 
 include(../../template/flags.cmake)
 

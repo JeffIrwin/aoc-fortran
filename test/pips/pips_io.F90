@@ -157,10 +157,11 @@ function read_pips_json(filename, difficulty) result(p)
 	character(len=*), intent(in) :: filename, difficulty
 	type(pips_t) :: p
 	!********
-	integer :: nr, nd, ni, ir, jr, nx, ny, x, y, ii, id
+	integer :: nr, ir, jr, nx, ny, ii
+	integer, allocatable :: indices(:,:)
 	type(json_t) :: json
 	character :: c
-	character(len=:), allocatable :: rkey, ikey, dkey, type_
+	character(len=:), allocatable :: rkey, type_
 
 	write(*,*) 'Reading pips JSON file "'//filename//'" '//difficulty//' difficulty ...'
 	select case (difficulty)
@@ -217,19 +218,9 @@ function read_pips_json(filename, difficulty) result(p)
 			call panic('bad region type "'//type_//'"')
 		end select
 
-		ni = json%len(rkey//"/indices")
-		!print *, "ni = ", ni
-
-		do ii = 1, ni
-			! Iterate over indices
-			ikey = rkey//"/indices/"//to_str(ii-1)
-			x = int(json%get_i64(ikey//"/0"))
-			y = int(json%get_i64(ikey//"/1"))
-			!print *, "x, y = ", x, y
-
-			nx = max(nx, x)
-			ny = max(ny, y)
-		end do
+		indices = int(json%get_mat_i64(rkey//"/indices"))
+		nx = max(nx, maxval(indices(:,1)))
+		ny = max(ny, maxval(indices(:,2)))
 	end do
 	nx = nx + 1  ! convert 0-index to 1-index
 	ny = ny + 1
@@ -254,14 +245,9 @@ function read_pips_json(filename, difficulty) result(p)
 			jr = jr + 1
 			c = p%region_name(jr)
 		end if
-		ni = json%len(rkey//"/indices")
-		do ii = 1, ni
-			! Iterate over indices
-			ikey = rkey//"/indices/"//to_str(ii-1)
-			x = int(json%get_i64(ikey//"/0"))
-			y = int(json%get_i64(ikey//"/1"))
-			!print *, "x, y = ", x, y
-			p%char_grid(x+1, y+1) = c
+		indices = int(json%get_mat_i64(rkey//"/indices"))
+		do ii = 1, size(indices, 1)
+			p%char_grid(indices(ii,1)+1, indices(ii,2)+1) = c
 		end do
 	end do
 
@@ -273,15 +259,8 @@ function read_pips_json(filename, difficulty) result(p)
 	!call print_mat_char("cg = ", p%char_grid)
 
 	! Parse the dominoes
-	nd = json%len("/"//difficulty//"/dominoes")
-	!print *, "nd = ", nd
-	allocate(p%domino(2, nd))
-	do id = 1, nd
-		dkey = "/"//difficulty//"/dominoes/"//to_str(id-1)
-		p%domino(1, id) = int(json%get_i64(dkey//"/0"))
-		p%domino(2, id) = int(json%get_i64(dkey//"/1"))
-	end do
-	p%num_dominoes = nd
+	p%domino = transpose(int(json%get_mat_i64("/"//difficulty//"/dominoes")))
+	p%num_dominoes = size(p%domino, 2)
 	!call print_mat_i32("ds (transpose) = ", p%domino)
 
 end function read_pips_json
